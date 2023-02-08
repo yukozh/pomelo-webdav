@@ -12,7 +12,7 @@
             uri = uri.Trim('/');
 
             var tokens = new List<Guid>();
-            foreach(var _lock in Locks.Values.Where(x => x.Uri == uri))
+            foreach(var _lock in Locks.Values.Where(x => x.Uri.StartsWith(uri)))
             {
                 tokens.Add(_lock.LockToken);
             }

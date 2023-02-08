@@ -10,6 +10,10 @@ namespace Pomelo.Storage.WebDav
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.UseKestrel(x => 
+            {
+                x.Limits.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024L;
+            });
             var storagePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "storage");
             builder.Services.AddLocalDiskWebDAVStorageProvider(storagePath)
                 .AddSimpleWebDavLockManager();
