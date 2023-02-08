@@ -1,9 +1,11 @@
-﻿namespace Pomelo.Storage.WebDav.Abstractions
+﻿using Pomelo.Storage.WebDav.Abstractions.Models;
+
+namespace Pomelo.Storage.WebDav.Abstractions.Storage
 {
     public interface IWebDAVStorageProvider
     {
         Task<IEnumerable<Item>> GetItemsAsync(
-            string path, 
+            string path,
             CancellationToken cancellationToken = default);
 
         Task<Stream> GetFileReadStreamAsync(
@@ -27,7 +29,7 @@
             CancellationToken cancellationToken = default);
 
         Task<Item> GetItemAsync(
-            string path, 
+            string path,
             CancellationToken cancellationToken = default);
 
         Task MoveItemAsync(

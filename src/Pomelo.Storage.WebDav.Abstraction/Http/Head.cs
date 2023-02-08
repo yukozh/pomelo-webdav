@@ -1,4 +1,6 @@
-﻿namespace Pomelo.Storage.WebDav.Abstractions
+﻿using Pomelo.Storage.WebDav.Abstractions.Storage;
+
+namespace Pomelo.Storage.WebDav.Abstractions
 {
     public partial class WebDAVMiddleware
     {

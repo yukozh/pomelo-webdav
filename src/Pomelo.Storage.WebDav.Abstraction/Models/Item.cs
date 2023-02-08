@@ -1,4 +1,4 @@
-﻿namespace Pomelo.Storage.WebDav.Abstractions
+﻿namespace Pomelo.Storage.WebDav.Abstractions.Models
 {
     public class Item
     {
@@ -16,9 +16,7 @@
     }
 
     public class ItemProperties
-    { 
-        public ItemLock SupportedLock { get; set; }
-
+    {
         public ItemType ResourceType { get; set; }
 
         public long ContentLength { get; set; } = 0;
@@ -28,12 +26,5 @@
         public DateTime? CreationTime { get; set; }
 
         public DateTime? LastModified { get; set; }
-    }
-
-    public class ItemLock
-    { 
-        public IEnumerable<string> LockScopes { get; set; }
-
-        public IEnumerable<string> LockTypes { get; set; }
     }
 }

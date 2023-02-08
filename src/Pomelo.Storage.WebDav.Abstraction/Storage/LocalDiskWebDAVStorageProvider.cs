@@ -1,9 +1,8 @@
-﻿using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
+using Pomelo.Storage.WebDav.Abstractions.Models;
 
-namespace Pomelo.Storage.WebDav.Abstractions
+namespace Pomelo.Storage.WebDav.Abstractions.Storage
 {
     public class LocalDiskWebDAVStorageProvider : IWebDAVStorageProvider
     {
@@ -72,11 +71,6 @@ namespace Pomelo.Storage.WebDav.Abstractions
                     Properties = new ItemProperties
                     {
                         ContentLength = file.Length,
-                        SupportedLock = new ItemLock
-                        {
-                            LockScopes = new[] { "exclusive" },
-                            LockTypes = new[] { "write" }
-                        },
                         Etag = Convert.ToBase64String(SHA256.ComputeHash(Encoding.UTF8.GetBytes(filePath + file.LastWriteTime.Ticks))),
                         LastModified = file.LastWriteTime,
                         CreationTime = file.CreationTime,
@@ -175,11 +169,6 @@ namespace Pomelo.Storage.WebDav.Abstractions
                     Properties = new ItemProperties
                     {
                         ContentLength = fi.Length,
-                        SupportedLock = new ItemLock
-                        {
-                            LockScopes = new[] { "exclusive" },
-                            LockTypes = new[] { "write" }
-                        },
                         Etag = Convert.ToBase64String(SHA256.ComputeHash(Encoding.UTF8.GetBytes(path + fi.LastWriteTime.Ticks))),
                         LastModified = fi.LastWriteTime,
                         CreationTime = fi.CreationTime,

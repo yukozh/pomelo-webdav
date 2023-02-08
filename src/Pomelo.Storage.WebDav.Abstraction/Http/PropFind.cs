@@ -1,10 +1,14 @@
 ﻿using System.Text;
+using System.Threading;
+using Pomelo.Storage.WebDav.Abstractions.Lock;
+using Pomelo.Storage.WebDav.Abstractions.Models;
+using Pomelo.Storage.WebDav.Abstractions.Storage;
 
 namespace Pomelo.Storage.WebDav.Abstractions
 {
     public partial class WebDAVMiddleware
     {
-        private string GetBaseUrl(HttpContext context)
+        private static string GetBaseUrl(HttpContext context)
         {
             var baseUrlBuilder = new StringBuilder();
             baseUrlBuilder.Append(context.Request.Scheme);
@@ -25,9 +29,20 @@ namespace Pomelo.Storage.WebDav.Abstractions
             return baseUrl;
         }
 
+        private static string GetUri(HttpContext context)
+        {
+            if (context.Request.RouteValues["path"] == null) 
+            {
+                return null;
+            }
+
+            return context.Request.RouteValues["path"].ToString().Trim('/');
+        }
+
         private async Task PropFindAsync(HttpContext context)
         {
             var storage = context.RequestServices.GetRequiredService<IWebDAVStorageProvider>();
+            var lockManager = context.RequestServices.GetRequiredService<IWebDavLockManager>();
             var items = await storage.GetItemsAsync(
                 context.GetRouteData().Values["path"] as string, 
                 context.RequestAborted);
@@ -62,9 +77,9 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 response = $"""
                 <?xml version="1.0" encoding="utf-8"?>
                 <D:multistatus xmlns:D="DAV:">
-                {PropFindHelper.BuildSingleDirectory(items.First(x => x.Depth == 0), baseUrl, context.Request.Protocol)}
-                {(depth == 0 ? "" : PropFindHelper.BuildDirectories(items.Where(x => x.Properties.ResourceType == ItemType.Directory && x.Depth > 0), baseUrl, context.Request.Protocol))}
-                {(depth == 0 ? "" : PropFindHelper.BuildFiles(items.Where(x => x.Properties.ResourceType == ItemType.File), baseUrl, context.Request.Protocol))}
+                {await PropFindHelper.BuildSingleDirectoryAsync(items.First(x => x.Depth == 0), baseUrl, context.Request.Protocol, lockManager, context.RequestAborted)}
+                {(depth == 0 ? "" : await PropFindHelper.BuildDirectoriesAsync(items.Where(x => x.Properties.ResourceType == ItemType.Directory && x.Depth > 0), baseUrl, context.Request.Protocol, lockManager, context.RequestAborted))}
+                {(depth == 0 ? "" : await PropFindHelper.BuildFilesAsync(items.Where(x => x.Properties.ResourceType == ItemType.File), baseUrl, context.Request.Protocol, lockManager, context.RequestAborted))}
                 </D:multistatus>
                 """;
             }
@@ -77,7 +92,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
                     await context.Response.CompleteAsync();
                     return;
                 }
-                response = PropFindHelper.BuildSingleFile(item, baseUrl, context.Request.Protocol);
+                response = await PropFindHelper.BuildSingleFileAsync(item, baseUrl, context.Request.Protocol, lockManager, context.RequestAborted);
             }
 
             context.Response.StatusCode = 207;
@@ -105,7 +120,12 @@ namespace Pomelo.Storage.WebDav.Abstractions
             return time.Value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.FFFZ");
         }
 
-        public static string BuildSingleDirectory(Item item, string baseUrl, string protocol)
+        public static async Task<string> BuildSingleDirectoryAsync(
+            Item item,
+            string baseUrl, 
+            string protocol,
+            IWebDavLockManager lockManager, 
+            CancellationToken cancellationToken = default)
             => $"""
                 <D:response>
                     <D:href>{ParseUrl($"{baseUrl}/{item.Href}")}</D:href>
@@ -119,24 +139,58 @@ namespace Pomelo.Storage.WebDav.Abstractions
                                 <D:collection/>
                             </D:resourcetype>
                             <D:displayname/>
+                            {await BuildLocksAsync(item.Href, lockManager, cancellationToken)}
                         </D:prop>
                     </D:propstat>
                 </D:response>
              """;
 
-        public static string BuildDirectories(IEnumerable<Item> items, string baseUrl, string protocol)
+        public static async Task<string> BuildLocksAsync(string uri, IWebDavLockManager lockManager, CancellationToken cancellationToken = default)
+        {
+            uri = uri.Trim('/');
+            var locks = await lockManager.GetLocksAsync(uri, cancellationToken);
+            if (!locks.Any())
+            {
+                return "";
+            }
+
+            return $"""
+                               <D:supportedlock>
+                                   <D:lockentry>
+                                       <D:lockscope>
+                                           <D:{locks.First().Type.ToString().ToLowerInvariant()}/>
+                                       </D:lockscope>
+                                       <D:locktype>
+                                           <D:write/>
+                                       </D:locktype>
+                                   </D:lockentry>
+                               </D:supportedlock>
+                """;
+        }
+
+        public static async Task<string> BuildDirectoriesAsync(
+            IEnumerable<Item> items, 
+            string baseUrl, 
+            string protocol, 
+            IWebDavLockManager lockManager, 
+            CancellationToken cancellationToken = default)
         { 
             var stringBuilder = new StringBuilder();
 
             foreach(var item in items)
             {
-                stringBuilder.AppendLine(BuildSingleDirectory(item, baseUrl, protocol));
+                stringBuilder.AppendLine(await BuildSingleDirectoryAsync(item, baseUrl, protocol, lockManager, cancellationToken));
             }
 
             return stringBuilder.ToString();
         }
 
-        public static string BuildSingleFile(Item item, string baseUrl, string protocol)
+        public static async Task<string> BuildSingleFileAsync(
+            Item item, 
+            string baseUrl,
+            string protocol, 
+            IWebDavLockManager lockManager, 
+            CancellationToken cancellationToken = default)
             => $"""
                     <D:response>
                         <D:href>{ParseUrl($"{baseUrl}/{item.Href}")}</D:href>
@@ -150,18 +204,24 @@ namespace Pomelo.Storage.WebDav.Abstractions
                                 <D:getlastmodified>{(item.Properties.LastModified ?? DateTime.UtcNow).ToString("r")}</D:getlastmodified>
                                 <D:creationdate>{ParseCreationTime(item.Properties.CreationTime)}</D:creationdate>
                                 <D:displayname/>
+                                {await BuildLocksAsync(item.Href, lockManager, cancellationToken)}
                             </D:prop>
                         </D:propstat>
                     </D:response>
                  """;
 
-        public static string BuildFiles(IEnumerable<Item> items, string baseUrl, string protocol)
+        public static async Task<string> BuildFilesAsync(
+            IEnumerable<Item> items, 
+            string baseUrl, 
+            string protocol,
+            IWebDavLockManager lockManager,
+            CancellationToken cancellationToken = default)
         {
             var stringBuilder = new StringBuilder();
 
             foreach (var item in items)
             {
-                stringBuilder.AppendLine(BuildSingleFile(item, baseUrl, protocol));
+                stringBuilder.AppendLine(await BuildSingleFileAsync(item, baseUrl, protocol, lockManager, cancellationToken));
             }
 
             return stringBuilder.ToString();

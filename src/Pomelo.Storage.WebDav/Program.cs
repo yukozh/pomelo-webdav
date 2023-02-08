@@ -1,4 +1,6 @@
 using Pomelo.Storage.WebDav.Abstractions;
+using Pomelo.Storage.WebDav.Abstractions.Lock;
+using Pomelo.Storage.WebDav.Abstractions.Storage;
 using System.Reflection;
 
 namespace Pomelo.Storage.WebDav
@@ -9,7 +11,8 @@ namespace Pomelo.Storage.WebDav
         {
             var builder = WebApplication.CreateBuilder(args);
             var storagePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "storage");
-            builder.Services.AddLocalDiskWebDAVStorageProvider(storagePath);
+            builder.Services.AddLocalDiskWebDAVStorageProvider(storagePath)
+                .AddSimpleWebDavLockManager();
             var app = builder.Build();
 
             app.MapGet("/", () => "Hello World!");
