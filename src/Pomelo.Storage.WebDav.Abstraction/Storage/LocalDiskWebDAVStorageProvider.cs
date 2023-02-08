@@ -111,7 +111,7 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             }
 
             var physicalPath = Path.Combine(this.localPath, path);
-            return Task.FromResult(new FileStream(physicalPath, FileMode.CreateNew, FileAccess.ReadWrite) as Stream);
+            return Task.FromResult(new FileStream(physicalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite) as Stream);
         }
 
         public Task<bool> IsFileExistsAsync(string path, CancellationToken cancellationToken = default)
