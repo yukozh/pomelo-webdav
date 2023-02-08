@@ -1,11 +1,31 @@
 ﻿namespace Pomelo.Storage.WebDav.Abstractions.Lock
 {
-    public class SimpleWebDavLockManager : IWebDavLockManager
+    public class SimpleWebDavLockManager : IWebDAVLockManager
     {
         private readonly Dictionary<Guid, Models.Lock> Locks = new Dictionary<Guid, Models.Lock>();
         private readonly AsyncSemaphore _lock = new AsyncSemaphore(1);
 
-        public Task<IEnumerable<Models.Lock>> GetLocksAsync(string uri, CancellationToken cancellationToken = default)
+        public async Task DeleteLockByUriAsync(
+            string uri,
+            CancellationToken cancellationToken = default)
+        {
+            uri = uri.Trim('/');
+
+            var tokens = new List<Guid>();
+            foreach(var _lock in Locks.Values.Where(x => x.Uri == uri))
+            {
+                tokens.Add(_lock.LockToken);
+            }
+
+            foreach(var token in tokens)
+            {
+                await UnlockAsync(token, cancellationToken);
+            }
+        }
+
+        public Task<IEnumerable<Models.Lock>> GetLocksAsync(
+            string uri, 
+            CancellationToken cancellationToken = default)
         {
             uri = uri.Trim('/');
 
@@ -133,6 +153,6 @@
     public static class SimpleWebDavLockManagerExtensions
     {
         public static IServiceCollection AddSimpleWebDavLockManager(this IServiceCollection services)
-            => services.AddSingleton<IWebDavLockManager, SimpleWebDavLockManager>();
+            => services.AddSingleton<IWebDAVLockManager, SimpleWebDavLockManager>();
     }
 }

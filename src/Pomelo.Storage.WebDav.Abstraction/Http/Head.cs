@@ -22,6 +22,8 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 return;
             }
 
+            context.Response.Headers["Accept-Ranges"] = "bytes";
+            context.Response.Headers["Etag"] = info.Properties.Etag;
             context.Response.Headers["Last-Modified"] = (info.Properties.LastModified ?? DateTime.UtcNow).ToString("r");
             context.Response.Headers.ContentLength = info.Properties.ContentLength;
             await context.Response.CompleteAsync();

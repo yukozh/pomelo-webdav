@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Threading;
+using System.Web;
 using Pomelo.Storage.WebDav.Abstractions.Lock;
 using Pomelo.Storage.WebDav.Abstractions.Models;
 using Pomelo.Storage.WebDav.Abstractions.Storage;
@@ -36,13 +37,13 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 return null;
             }
 
-            return context.Request.RouteValues["path"].ToString().Trim('/');
+            return HttpUtility.UrlPathEncode(context.Request.RouteValues["path"].ToString().Trim('/'));
         }
 
         private async Task PropFindAsync(HttpContext context)
         {
             var storage = context.RequestServices.GetRequiredService<IWebDAVStorageProvider>();
-            var lockManager = context.RequestServices.GetRequiredService<IWebDavLockManager>();
+            var lockManager = context.RequestServices.GetRequiredService<IWebDAVLockManager>();
             var items = await storage.GetItemsAsync(
                 context.GetRouteData().Values["path"] as string, 
                 context.RequestAborted);
@@ -124,7 +125,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             Item item,
             string baseUrl, 
             string protocol,
-            IWebDavLockManager lockManager, 
+            IWebDAVLockManager lockManager, 
             CancellationToken cancellationToken = default)
             => $"""
                 <D:response>
@@ -145,7 +146,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 </D:response>
              """;
 
-        public static async Task<string> BuildLocksAsync(string uri, IWebDavLockManager lockManager, CancellationToken cancellationToken = default)
+        public static async Task<string> BuildLocksAsync(string uri, IWebDAVLockManager lockManager, CancellationToken cancellationToken = default)
         {
             uri = uri.Trim('/');
             var locks = await lockManager.GetLocksAsync(uri, cancellationToken);
@@ -172,7 +173,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             IEnumerable<Item> items, 
             string baseUrl, 
             string protocol, 
-            IWebDavLockManager lockManager, 
+            IWebDAVLockManager lockManager, 
             CancellationToken cancellationToken = default)
         { 
             var stringBuilder = new StringBuilder();
@@ -189,7 +190,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             Item item, 
             string baseUrl,
             string protocol, 
-            IWebDavLockManager lockManager, 
+            IWebDAVLockManager lockManager, 
             CancellationToken cancellationToken = default)
             => $"""
                     <D:response>
@@ -214,7 +215,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             IEnumerable<Item> items, 
             string baseUrl, 
             string protocol,
-            IWebDavLockManager lockManager,
+            IWebDAVLockManager lockManager,
             CancellationToken cancellationToken = default)
         {
             var stringBuilder = new StringBuilder();

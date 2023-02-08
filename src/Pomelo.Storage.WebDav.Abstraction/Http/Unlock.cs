@@ -6,7 +6,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
     {
         private async Task UnlockAsync(HttpContext context)
         {
-            var lockManager = context.RequestServices.GetRequiredService<IWebDavLockManager>();
+            var lockManager = context.RequestServices.GetRequiredService<IWebDAVLockManager>();
             var lockToken = context.Request.Headers["Lock-Token"].ToString().TrimStart('<').TrimEnd('>');
             var lockTokenGuid = lockToken.Substring("urn:uuid:".Length);
             await lockManager.UnlockAsync(Guid.Parse(lockTokenGuid));

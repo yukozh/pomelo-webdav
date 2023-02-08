@@ -314,20 +314,70 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             IEnumerable<XElement> elementsToRemove, 
             CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                path = "";
+            }
+
+            var physicalPath = Path.Combine(this.localPath, path);
+
             // Ignore all properties
             var ret = new List<PatchPropertyResult>();
 
-            foreach(var item in elementsToSet.SelectMany(x => x.Descendants()))
+            foreach(var prop in elementsToSet)
             {
-                ret.Add(new PatchPropertyResult { StatusCode = 422, PropertyXName = item.Name.ToString() });
+                var result = new PatchPropertyResult
+                {
+                    StatusCode = 424,
+                    PropertyNames = new List<string>(),
+                    Namespaces = prop.Descendants().Select(x => x.Name.NamespaceName).Distinct().ToList()
+                };
+
+                var items = prop.Descendants();
+                var fi = new FileInfo(physicalPath);
+                foreach (var item in items)
+                { 
+                    if (item.Name.LocalName.Equals("Win32FileAttributes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        fi.Attributes = (FileAttributes)Convert.ToInt32(item.Value);
+                        continue;
+                    }
+
+                    result.PropertyNames.Add("ns" + result.Namespaces.IndexOf(item.Name.NamespaceName) + ":" + item.Name.LocalName);
+                }
+
+                ret.Add(result);
             }
 
-            foreach (var item in elementsToRemove.SelectMany(x => x.Descendants()))
+            foreach (var item in elementsToRemove)
             {
-                ret.Add(new PatchPropertyResult { StatusCode = 422, PropertyXName = item.Name.ToString() });
+                var namespaces = item.Descendants().Select(x => x.Name.NamespaceName).Distinct().ToList();
+                ret.Add(new PatchPropertyResult
+                {
+                    StatusCode = 424,
+                    Namespaces = namespaces,
+                    PropertyNames = item.Descendants().Select(x => "ns" + namespaces.IndexOf(x.Name.NamespaceName) + ":" + x.Name.LocalName).ToList()
+                });
             }
 
             return Task.FromResult(ret as IEnumerable<PatchPropertyResult>);
+        }
+
+        public Task CreateDirectoryAsync(string path, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                path = "";
+            }
+
+            var physicalPath = Path.Combine(this.localPath, path);
+
+            if (!Directory.Exists(physicalPath))
+            {
+                Directory.CreateDirectory(physicalPath);
+            }
+
+            return Task.CompletedTask;
         }
     }
 

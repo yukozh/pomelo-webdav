@@ -29,6 +29,10 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             string path,
             CancellationToken cancellationToken = default);
 
+        Task CreateDirectoryAsync(
+            string path,
+            CancellationToken cancellationToken = default);
+
         Task<Item> GetItemAsync(
             string path,
             CancellationToken cancellationToken = default);

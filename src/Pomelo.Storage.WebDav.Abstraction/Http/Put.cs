@@ -16,6 +16,9 @@ namespace Pomelo.Storage.WebDav.Abstractions
 
             using var fs = await storage.GetFileWriteStreamAsync(context.Request.RouteValues["path"] as string, context.RequestAborted);
             await context.Request.Body.CopyToAsync(fs, context.RequestAborted);
+
+            context.Response.StatusCode = 204;
+            await context.Response.CompleteAsync();
         }
     }
 }

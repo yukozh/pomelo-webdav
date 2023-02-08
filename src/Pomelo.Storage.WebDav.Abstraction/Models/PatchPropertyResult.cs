@@ -2,7 +2,9 @@
 {
     public class PatchPropertyResult
     {
-        public string PropertyXName { get; set; }
+        public List<string> PropertyNames { get; set; }
+
+        public List<string> Namespaces { get; set; }
 
         public int StatusCode { get; set; }
     }

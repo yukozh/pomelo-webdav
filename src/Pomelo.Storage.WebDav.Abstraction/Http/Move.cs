@@ -7,7 +7,8 @@ namespace Pomelo.Storage.WebDav.Abstractions
         private async Task MoveAsync(HttpContext context)
         {
             var storage = context.RequestServices.GetRequiredService<IWebDAVStorageProvider>();
-            if (!await storage.IsFileExistsAsync(context.Request.RouteValues["path"] as string, context.RequestAborted))
+            if (!await storage.IsFileExistsAsync(context.Request.RouteValues["path"] as string, context.RequestAborted) 
+                && !await storage.IsDirectoryExistsAsync(context.Request.RouteValues["path"] as string, context.RequestAborted))
             {
                 context.Response.StatusCode = 404;
                 await context.Response.CompleteAsync();

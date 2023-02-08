@@ -23,10 +23,9 @@ namespace Pomelo.Storage.WebDav.Abstractions
             "HEAD",
             "PUT",
             "POST",
-            "Copy",
+            "COPY",
             "PROPFIND",
             "PROPPATCH",
-            "ACL",
             "MKCOL",
             "DELETE",
             "MOVE",
@@ -45,7 +44,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             }
 
             httpContext.Response.Headers.Server = "Pomelo WebDAV Abstractions";
-            var lockManager = httpContext.RequestServices.GetRequiredService<IWebDavLockManager>();
+            var lockManager = httpContext.RequestServices.GetRequiredService<IWebDAVLockManager>();
 
             switch (method)
             {
@@ -74,6 +73,12 @@ namespace Pomelo.Storage.WebDav.Abstractions
                         await DeleteAsync(httpContext);
                     }
                     break;
+                case "MKCOL":
+                    if (await IsAbleToWriteAsync(httpContext))
+                    {
+                        await MkcolAsync(httpContext);
+                    }
+                    break;
                 case "PROPFIND":
                     await PropFindAsync(httpContext);
                     return;
@@ -94,8 +99,6 @@ namespace Pomelo.Storage.WebDav.Abstractions
                     {
                         await PropPatchAsync(httpContext);
                     }
-                    return;
-                case "ACL":
                     return;
                 case "LOCK":
                     await LockAsync(httpContext);
@@ -147,6 +150,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             [416] = "Requested range not satisfiable",
             [417] = "Expectation Failed",
             [422] = "Unprocessable Entity",
+            [424] = "Failed Dependency",
             [500] = "Internal Server Error",
             [501] = "Not Implemented",
             [502] = "Bad Gateway",
@@ -166,7 +170,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
 
         private static async Task<bool> IsAbleToWriteAsync(HttpContext context, string uri)
         {
-            var lockManager = context.RequestServices.GetRequiredService<IWebDavLockManager>();
+            var lockManager = context.RequestServices.GetRequiredService<IWebDAVLockManager>();
             var locks = (await lockManager.GetLocksAsync(uri, context.RequestAborted));
             var lockTokens = GetLockTokens(context);
             if (locks.Any(x => !lockTokens.Contains(x.LockToken) && x.Type == LockType.Exclusive))
@@ -183,7 +187,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
 
         private static async Task<bool> IsAbleToReadAsync(HttpContext context)
         {
-            var lockManager = context.RequestServices.GetRequiredService<IWebDavLockManager>();
+            var lockManager = context.RequestServices.GetRequiredService<IWebDAVLockManager>();
             var uri = GetUri(context);
             var locks = (await lockManager.GetLocksAsync(uri, context.RequestAborted));
             var lockTokens = GetLockTokens(context);
@@ -201,7 +205,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
 
         private static async Task<bool> IsAbleToWriteAsync(HttpContext context)
         {
-            var lockManager = context.RequestServices.GetRequiredService<IWebDavLockManager>();
+            var lockManager = context.RequestServices.GetRequiredService<IWebDAVLockManager>();
             var uri = GetUri(context);
             var locks = (await lockManager.GetLocksAsync(uri, context.RequestAborted));
             var lockTokens = GetLockTokens(context);
@@ -226,7 +230,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 return "";
             }
 
-            return path.Substring(0, index - 1);
+            return path.Substring(0, index).Trim('/');
         }
 
         private static Regex urnRegex = new Regex("(?<=<urn:uuid:)[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(?=>)");

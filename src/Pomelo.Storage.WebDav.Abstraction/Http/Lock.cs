@@ -18,7 +18,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 ? LockType.Shared 
                 : LockType.Exclusive;
 
-            var lockManager = context.RequestServices.GetRequiredService<IWebDavLockManager>();
+            var lockManager = context.RequestServices.GetRequiredService<IWebDAVLockManager>();
             try
             {
                 var uri = GetUri(context);
