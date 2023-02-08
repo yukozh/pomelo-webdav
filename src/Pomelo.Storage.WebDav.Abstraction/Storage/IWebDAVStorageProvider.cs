@@ -1,4 +1,5 @@
-﻿using Pomelo.Storage.WebDav.Abstractions.Models;
+﻿using System.Xml.Linq;
+using Pomelo.Storage.WebDav.Abstractions.Models;
 
 namespace Pomelo.Storage.WebDav.Abstractions.Storage
 {
@@ -42,6 +43,12 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             string fromPath,
             string destPath,
             bool overwrite,
+            CancellationToken cancellationToken = default);
+
+        Task<IEnumerable<PatchPropertyResult>> PatchPropertyAsync(
+            string path,
+            IEnumerable<XElement> elementsToSet,
+            IEnumerable<XElement> elementsToRemove,
             CancellationToken cancellationToken = default);
     }
 }

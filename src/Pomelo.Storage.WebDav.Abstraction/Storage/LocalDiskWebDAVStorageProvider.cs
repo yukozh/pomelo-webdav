@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
 using Pomelo.Storage.WebDav.Abstractions.Models;
 
 namespace Pomelo.Storage.WebDav.Abstractions.Storage
@@ -305,6 +306,28 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
                     target.CreateSubdirectory(diSourceSubDir.Name);
                 CopyFolder(diSourceSubDir, nextTargetSubDir);
             }
+        }
+
+        public Task<IEnumerable<PatchPropertyResult>> PatchPropertyAsync(
+            string path, 
+            IEnumerable<XElement> elementsToSet,
+            IEnumerable<XElement> elementsToRemove, 
+            CancellationToken cancellationToken = default)
+        {
+            // Ignore all properties
+            var ret = new List<PatchPropertyResult>();
+
+            foreach(var item in elementsToSet.SelectMany(x => x.Descendants()))
+            {
+                ret.Add(new PatchPropertyResult { StatusCode = 422, PropertyXName = item.Name.ToString() });
+            }
+
+            foreach (var item in elementsToRemove.SelectMany(x => x.Descendants()))
+            {
+                ret.Add(new PatchPropertyResult { StatusCode = 422, PropertyXName = item.Name.ToString() });
+            }
+
+            return Task.FromResult(ret as IEnumerable<PatchPropertyResult>);
         }
     }
 

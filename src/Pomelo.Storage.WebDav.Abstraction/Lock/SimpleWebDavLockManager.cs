@@ -1,7 +1,4 @@
-﻿using Pomelo.Storage.WebDav.Abstractions.Models;
-using System.Text;
-
-namespace Pomelo.Storage.WebDav.Abstractions.Lock
+﻿namespace Pomelo.Storage.WebDav.Abstractions.Lock
 {
     public class SimpleWebDavLockManager : IWebDavLockManager
     {
