@@ -15,10 +15,11 @@ namespace Pomelo.Storage.WebDav.Abstractions
             baseUrlBuilder.Append(context.Request.Scheme);
             baseUrlBuilder.Append("://");
             baseUrlBuilder.Append(context.Request.Host.Value);
+            string path = "";
             if (context.Request.RouteValues["path"] != null)
             {
                 var length = (context.Request.RouteValues["path"] as string).Length;
-                var path = (context.Request.RouteValues["path"] as string).TrimEnd('/');
+                path = (context.Request.RouteValues["path"] as string).TrimEnd('/');
                 var fullEndpoint = context.Request.Path.Value.TrimEnd('/');
                 var baseEndpoint = fullEndpoint.Substring(0, fullEndpoint.Length - path.Length).TrimEnd('/');
                 baseUrlBuilder.Append(baseEndpoint);
@@ -28,45 +29,48 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 baseUrlBuilder.Append(context.Request.Path.Value.TrimEnd('/'));
             }
             var baseUrl = baseUrlBuilder.ToString();
+            var isDirectory = string.IsNullOrEmpty(path) || await storage.IsDirectoryExistsAsync(path);
 
-            if (items == null || items.Count() == 0)
+            if (isDirectory && (items == null || items.Count() == 0))
             {
-                context.Response.StatusCode = 207;
-                var notFoundResponse = $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <D:multistatus xmlns:D="DAV:">
-                   <D:response>
-                       <D:href>{baseUrl}</D:href>
-                       <D:propstat>
-                           <D:status>{context.Request.Protocol} 404 Not Found</D:status>
-                       </D:propstat>
-                   </D:response>
-                </D:multistatus>
-                """;
-                context.Response.ContentLength = notFoundResponse.Length;
-                await context.Response.WriteAsync(notFoundResponse);
+                context.Response.StatusCode = 404;
                 await context.Response.CompleteAsync();
                 return;
-            }
-
-            var baseDirectory = items.SingleOrDefault(x => x.Properties.ResourceType == ItemType.RootDirectory);
-            if (baseDirectory == null)
-            {
-                throw new InvalidDataException("Missing root directory");
             }
 
             var depth = context.Request.Headers.ContainsKey("Depth") 
                 ? Convert.ToInt32(context.Request.Headers["Depth"]) 
                 : 1;
 
-            var response = $"""
+            if (depth > 1)
+            {
+                context.Response.StatusCode = 400;
+                await context.Response.CompleteAsync();
+            }
+
+            var response = "";
+            if (isDirectory)
+            {
+                response = $"""
                 <?xml version="1.0" encoding="utf-8"?>
                 <D:multistatus xmlns:D="DAV:">
-                {PropFindHelper.BuildBaseDirectory(baseDirectory, baseUrl, context.Request.Protocol)}
-                {(depth == 0 ? "" : PropFindHelper.BuildDirectories(items.Where(x => x.Properties.ResourceType == ItemType.Directory), baseUrl, context.Request.Protocol))}
+                {PropFindHelper.BuildSingleDirectory(items.First(x => x.Depth == 0), baseUrl, context.Request.Protocol)}
+                {(depth == 0 ? "" : PropFindHelper.BuildDirectories(items.Where(x => x.Properties.ResourceType == ItemType.Directory && x.Depth > 0), baseUrl, context.Request.Protocol))}
                 {(depth == 0 ? "" : PropFindHelper.BuildFiles(items.Where(x => x.Properties.ResourceType == ItemType.File), baseUrl, context.Request.Protocol))}
                 </D:multistatus>
                 """;
+            }
+            else 
+            {
+                var item = await storage.GetItemAsync(path, context.RequestAborted);
+                if (item == null)
+                {
+                    context.Response.StatusCode = 400;
+                    await context.Response.CompleteAsync();
+                    return;
+                }
+                response = PropFindHelper.BuildSingleFile(item, baseUrl, context.Request.Protocol);
+            }
 
             context.Response.StatusCode = 207;
             context.Response.ContentType = "text/xml";
@@ -93,9 +97,8 @@ namespace Pomelo.Storage.WebDav.Abstractions
             return time.Value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.FFFZ");
         }
 
-        public static string BuildBaseDirectory(Item item, string baseUrl, string protocol)
-        {
-            return $"""
+        public static string BuildSingleDirectory(Item item, string baseUrl, string protocol)
+            => $"""
                 <D:response>
                     <D:href>{ParseUrl($"{baseUrl}/{item.Href}")}</D:href>
                     <D:propstat>
@@ -107,11 +110,11 @@ namespace Pomelo.Storage.WebDav.Abstractions
                             <D:resourcetype>
                                 <D:collection/>
                             </D:resourcetype>
+                            <D:displayname/>
                         </D:prop>
                     </D:propstat>
                 </D:response>
              """;
-        }
 
         public static string BuildDirectories(IEnumerable<Item> items, string baseUrl, string protocol)
         { 
@@ -119,35 +122,14 @@ namespace Pomelo.Storage.WebDav.Abstractions
 
             foreach(var item in items)
             {
-                stringBuilder.AppendLine($"""
-                    <D:response>
-                        <D:href>{ParseUrl($"{baseUrl}/{item.Href}")}</D:href>
-                        <D:propstat>
-                            <D:status>{protocol} 200 OK</D:status>
-                            <D:prop>
-                                <D:resourcetype>
-                                    <D:collection/>
-                                </D:resourcetype>
-                                <D:getlastmodified>{(item.Properties.LastModified ?? DateTime.UtcNow).ToString("r")}</D:getlastmodified>
-                                <D:creationdate>{ParseCreationTime(item.Properties.CreationTime)}</D:creationdate>
-                                <D:getcontentlength>{item.Properties.ContentLength}</D:getcontentlength>
-                                <D:displayname/>
-                            </D:prop>
-                        </D:propstat>
-                    </D:response>
-                 """);
+                stringBuilder.AppendLine(BuildSingleDirectory(item, baseUrl, protocol));
             }
 
             return stringBuilder.ToString();
         }
 
-        public static string BuildFiles(IEnumerable<Item> items, string baseUrl, string protocol)
-        {
-            var stringBuilder = new StringBuilder();
-
-            foreach (var item in items)
-            {
-                stringBuilder.AppendLine($"""
+        public static string BuildSingleFile(Item item, string baseUrl, string protocol)
+            => $"""
                     <D:response>
                         <D:href>{ParseUrl($"{baseUrl}/{item.Href}")}</D:href>
                         <D:propstat>
@@ -163,7 +145,15 @@ namespace Pomelo.Storage.WebDav.Abstractions
                             </D:prop>
                         </D:propstat>
                     </D:response>
-                 """);
+                 """;
+
+        public static string BuildFiles(IEnumerable<Item> items, string baseUrl, string protocol)
+        {
+            var stringBuilder = new StringBuilder();
+
+            foreach (var item in items)
+            {
+                stringBuilder.AppendLine(BuildSingleFile(item, baseUrl, protocol));
             }
 
             return stringBuilder.ToString();

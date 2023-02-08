@@ -42,8 +42,9 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 {
                     LastModified = di.LastWriteTime,
                     CreationTime = di.CreationTime,
-                    ResourceType = ItemType.RootDirectory
-                }
+                    ResourceType = ItemType.Directory,
+                },
+                Depth = 0
             });
 
             foreach (var directory in di.GetDirectories())
@@ -56,7 +57,8 @@ namespace Pomelo.Storage.WebDav.Abstractions
                         LastModified = directory.LastWriteTime,
                         CreationTime = di.CreationTime,
                         ResourceType = ItemType.Directory,
-                    }
+                    },
+                    Depth = 1
                 });
             }
 
@@ -76,9 +78,10 @@ namespace Pomelo.Storage.WebDav.Abstractions
                         },
                         Etag = Convert.ToBase64String(SHA256.ComputeHash(Encoding.UTF8.GetBytes(filePath + file.LastWriteTime.Ticks))),
                         LastModified = file.LastWriteTime,
-                        CreationTime = di.CreationTime,
+                        CreationTime = file.CreationTime,
                         ResourceType = ItemType.File
-                    }
+                    },
+                    Depth = 1
                 });
             }
 
@@ -97,7 +100,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             var physicalPath = Path.Combine(this.localPath, path);
             if (!File.Exists(physicalPath))
             {
-                return null;
+                return Task.FromResult<Stream>(null);
             }
 
             return Task.FromResult(new FileStream(physicalPath, FileMode.Open, FileAccess.Read) as Stream);
@@ -136,6 +139,77 @@ namespace Pomelo.Storage.WebDav.Abstractions
 
             var physicalPath = Path.Combine(this.localPath, path);
             return Task.FromResult(Directory.Exists(physicalPath));
+        }
+
+        public Task<Item> GetItemAsync(string path, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                path = "";
+            }
+
+            var physicalPath = Path.Combine(this.localPath, path);
+            if (Directory.Exists(physicalPath))
+            {
+                var di = new DirectoryInfo(physicalPath);
+                return Task.FromResult(new Item 
+                {
+                    Depth = 0,
+                    Href = string.Join("/", path.Replace("\\", "/").Split('/').Select(x => System.Web.HttpUtility.UrlPathEncode(x))),
+                    Properties = new ItemProperties 
+                    {
+                        LastModified = di.LastWriteTime,
+                        CreationTime = di.CreationTime,
+                        ResourceType = ItemType.Directory
+                    }
+                });
+            }
+            else if (File.Exists(physicalPath))
+            {
+                var fi = new FileInfo(physicalPath);
+                return Task.FromResult(new Item
+                {
+                    Depth = 0,
+                    Href = string.Join("/", path.Replace("\\", "/").Split('/').Select(x => System.Web.HttpUtility.UrlPathEncode(x))),
+                    Properties = new ItemProperties
+                    {
+                        ContentLength = fi.Length,
+                        SupportedLock = new ItemLock
+                        {
+                            LockScopes = new[] { "exclusive" },
+                            LockTypes = new[] { "write" }
+                        },
+                        Etag = Convert.ToBase64String(SHA256.ComputeHash(Encoding.UTF8.GetBytes(path + fi.LastWriteTime.Ticks))),
+                        LastModified = fi.LastWriteTime,
+                        CreationTime = fi.CreationTime,
+                        ResourceType = ItemType.File
+                    }
+                });
+            }
+            else
+            {
+                return Task.FromResult<Item>(null);
+            }
+        }
+
+        public Task DeleteItemAsync(string path, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                path = "";
+            }
+
+            var physicalPath = Path.Combine(this.localPath, path);
+            if (Directory.Exists(physicalPath))
+            {
+                Directory.Delete(physicalPath, true);
+            }
+            else if (File.Exists(physicalPath))
+            {
+                File.Delete(physicalPath);
+            }
+
+            return Task.CompletedTask;
         }
     }
 

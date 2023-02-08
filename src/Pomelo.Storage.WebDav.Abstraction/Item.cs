@@ -5,11 +5,12 @@
         public string Href { get; set; }
 
         public ItemProperties Properties { get; set; }
+
+        public int Depth { get; set; }
     }
 
     public enum ItemType
     {
-        RootDirectory,
         Directory,
         File
     }

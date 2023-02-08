@@ -10,6 +10,10 @@
             string path,
             CancellationToken cancellationToken = default);
 
+        Task DeleteItemAsync(
+            string path,
+            CancellationToken cancellationToken = default);
+
         Task<Stream> GetFileWriteStreamAsync(
             string path,
             CancellationToken cancellationToken = default);
@@ -20,6 +24,10 @@
 
         Task<bool> IsDirectoryExistsAsync(
             string path,
+            CancellationToken cancellationToken = default);
+
+        Task<Item> GetItemAsync(
+            string path, 
             CancellationToken cancellationToken = default);
     }
 }

@@ -48,6 +48,9 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 case "OPTIONS":
                     await OptionsAsync(httpContext);
                     return;
+                //case "HEAD":
+                //    await HeadAsync(httpContext);
+                //    break;
                 case "GET":
                     await GetAsync(httpContext);
                     return;
@@ -55,6 +58,9 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 case "POST":
                     await PutAsync(httpContext);
                     return;
+                case "DELETE":
+                    await DeleteAsync(httpContext);
+                    break;
                 case "PROPFIND":
                     await PropFindAsync(httpContext);
                     return;
@@ -73,7 +79,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             var index = path.LastIndexOf('/');
             if (index < 1)
             {
-                return path;
+                return "";
             }
 
             return path.Substring(0, index - 1);
