@@ -4,6 +4,27 @@ namespace Pomelo.Storage.WebDav.Abstractions
 {
     public partial class WebDAVMiddleware
     {
+        private string GetBaseUrl(HttpContext context)
+        {
+            var baseUrlBuilder = new StringBuilder();
+            baseUrlBuilder.Append(context.Request.Scheme);
+            baseUrlBuilder.Append("://");
+            baseUrlBuilder.Append(context.Request.Host.Value);
+            if (context.Request.RouteValues["path"] != null)
+            {
+                var path = (context.Request.RouteValues["path"] as string).TrimEnd('/');
+                var fullEndpoint = context.Request.Path.Value.TrimEnd('/');
+                var baseEndpoint = fullEndpoint.Substring(0, fullEndpoint.Length - path.Length).TrimEnd('/');
+                baseUrlBuilder.Append(baseEndpoint);
+            }
+            else
+            {
+                baseUrlBuilder.Append(context.Request.Path.Value.TrimEnd('/'));
+            }
+            var baseUrl = baseUrlBuilder.ToString();
+            return baseUrl;
+        }
+
         private async Task PropFindAsync(HttpContext context)
         {
             var storage = context.RequestServices.GetRequiredService<IWebDAVStorageProvider>();
@@ -11,26 +32,13 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 context.GetRouteData().Values["path"] as string, 
                 context.RequestAborted);
 
-            var baseUrlBuilder = new StringBuilder();
-            baseUrlBuilder.Append(context.Request.Scheme);
-            baseUrlBuilder.Append("://");
-            baseUrlBuilder.Append(context.Request.Host.Value);
+            var baseUrl = GetBaseUrl(context);
             string path = "";
             if (context.Request.RouteValues["path"] != null)
             {
-                var length = (context.Request.RouteValues["path"] as string).Length;
                 path = (context.Request.RouteValues["path"] as string).TrimEnd('/');
-                var fullEndpoint = context.Request.Path.Value.TrimEnd('/');
-                var baseEndpoint = fullEndpoint.Substring(0, fullEndpoint.Length - path.Length).TrimEnd('/');
-                baseUrlBuilder.Append(baseEndpoint);
             }
-            else 
-            {
-                baseUrlBuilder.Append(context.Request.Path.Value.TrimEnd('/'));
-            }
-            var baseUrl = baseUrlBuilder.ToString();
             var isDirectory = string.IsNullOrEmpty(path) || await storage.IsDirectoryExistsAsync(path);
-
             if (isDirectory && (items == null || items.Count() == 0))
             {
                 context.Response.StatusCode = 404;
@@ -65,7 +73,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 var item = await storage.GetItemAsync(path, context.RequestAborted);
                 if (item == null)
                 {
-                    context.Response.StatusCode = 400;
+                    context.Response.StatusCode = 404;
                     await context.Response.CompleteAsync();
                     return;
                 }

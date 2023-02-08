@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using System.Diagnostics;
-
-namespace Pomelo.Storage.WebDav.Abstractions
+﻿namespace Pomelo.Storage.WebDav.Abstractions
 {
     // You may need to install the Microsoft.AspNetCore.Http.Abstractions package into your project
     public partial class WebDAVMiddleware
@@ -21,6 +17,7 @@ namespace Pomelo.Storage.WebDav.Abstractions
             "HEAD",
             "PUT",
             "POST",
+            "Copy",
             "PROPFIND",
             "PROPPATCH",
             "ACL",
@@ -64,9 +61,19 @@ namespace Pomelo.Storage.WebDav.Abstractions
                 case "PROPFIND":
                     await PropFindAsync(httpContext);
                     return;
+                case "MOVE":
+                    await MoveAsync(httpContext);
+                    return;
+                case "COPY":
+                    await CopyAsync(httpContext);
+                    return;
                 case "PROPPATCH":
                     return;
                 case "ACL":
+                    return;
+                case "LOCK":
+                    return;
+                case "UNLOCK":
                     return;
                 default:
                     await _next(httpContext);

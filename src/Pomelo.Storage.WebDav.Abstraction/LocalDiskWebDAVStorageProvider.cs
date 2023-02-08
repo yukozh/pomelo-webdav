@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -210,6 +211,111 @@ namespace Pomelo.Storage.WebDav.Abstractions
             }
 
             return Task.CompletedTask;
+        }
+
+        public Task MoveItemAsync(
+            string fromPath,
+            string destPath,
+            bool overwrite,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(fromPath))
+            {
+                fromPath = "";
+            }
+
+            if (string.IsNullOrEmpty(destPath))
+            {
+                destPath = "";
+            }
+
+            if (fromPath == destPath)
+            {
+                return Task.CompletedTask;
+            }
+
+            fromPath = Path.Combine(this.localPath, fromPath);
+            destPath = Path.Combine(this.localPath, destPath);
+
+            if (File.Exists(fromPath))
+            {
+                File.Move(fromPath, destPath, overwrite);
+            }
+            else if (Directory.Exists(fromPath))
+            {
+                if (Directory.Exists(destPath) && overwrite)
+                {
+                    Directory.Delete(destPath, true);
+                }
+
+                Directory.Move(fromPath, destPath);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task CopyItemAsync(
+            string fromPath,
+            string destPath,
+            bool overwrite,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(fromPath))
+            {
+                fromPath = "";
+            }
+
+            if (string.IsNullOrEmpty(destPath))
+            {
+                destPath = "";
+            }
+
+            if (fromPath == destPath)
+            {
+                return Task.CompletedTask;
+            }
+
+            fromPath = Path.Combine(this.localPath, fromPath);
+            destPath = Path.Combine(this.localPath, destPath);
+
+            if (File.Exists(fromPath))
+            {
+                File.Copy(fromPath, destPath, true);
+            }
+            else if (Directory.Exists(fromPath))
+            {
+                if (!Directory.Exists(destPath))
+                {
+                    Directory.CreateDirectory(destPath);
+
+                    CopyFolder(new DirectoryInfo(fromPath), new DirectoryInfo(destPath));
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private static void CopyFolder(DirectoryInfo source, DirectoryInfo target)
+        {
+            if (!Directory.Exists(target.FullName))
+            {
+                Directory.CreateDirectory(target.FullName);
+            }
+
+            // Copy each file into the new directory.
+            foreach (FileInfo fi in source.GetFiles())
+            {
+                Console.WriteLine(@"Copying {0}\{1}", target.FullName, fi.Name);
+                fi.CopyTo(Path.Combine(target.FullName, fi.Name), true);
+            }
+
+            // Copy each subdirectory using recursion.
+            foreach (DirectoryInfo diSourceSubDir in source.GetDirectories())
+            {
+                DirectoryInfo nextTargetSubDir =
+                    target.CreateSubdirectory(diSourceSubDir.Name);
+                CopyFolder(diSourceSubDir, nextTargetSubDir);
+            }
         }
     }
 

@@ -29,5 +29,17 @@
         Task<Item> GetItemAsync(
             string path, 
             CancellationToken cancellationToken = default);
+
+        Task MoveItemAsync(
+            string fromPath,
+            string destPath,
+            bool overwrite,
+            CancellationToken cancellationToken = default);
+
+        Task CopyItemAsync(
+            string fromPath,
+            string destPath,
+            bool overwrite,
+            CancellationToken cancellationToken = default);
     }
 }
