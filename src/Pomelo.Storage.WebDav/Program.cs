@@ -1,6 +1,7 @@
 // Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Pomelo.Storage.WebDAV.Abstractions;
 using Pomelo.Storage.WebDAV.Abstractions.Factory;
@@ -9,6 +10,7 @@ using Pomelo.Storage.WebDAV.Abstractions.Storage;
 
 namespace Pomelo.Storage.WebDAV
 {
+    [ExcludeFromCodeCoverage]
     public class Program
     {
         public static void Main(string[] args)
