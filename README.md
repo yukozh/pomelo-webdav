@@ -163,6 +163,10 @@ public interface IWebDAVHttpHandler
 
 You can also define a class inherit from `DefaultWebDAVHttpHandler` to override existed methods. [DefaultWebDAVHttpHandler.cs](https://github.com/yukozh/pomelo-webdav/blob/main/src/Pomelo.Storage.WebDAV/Http/DefaultWebDAVHttpHandler.cs)
 
+## Authentication & Authorization
+
+You can use ASP.NET Core Authentication & Authorization middlewares with Pomelo.Storage.WebDAV. Developers are able to access `ClaimsPrincipal` from `WebDAVContext.User`.
+
 ## Contact Me
 
 - Email: hi@yuko.me
