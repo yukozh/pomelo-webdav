@@ -1,4 +1,7 @@
-﻿namespace Pomelo.Storage.WebDav.Abstractions.Lock
+﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
+// Licensed under the MIT. See LICENSE in the project root for license information.
+
+namespace Pomelo.Storage.WebDAV.Abstractions.Lock
 {
     public enum LockType
     {
@@ -8,12 +11,20 @@
 
     public interface IWebDAVLockManager
     {
-        Task<IEnumerable<Models.Lock>> GetLocksAsync(string uri, CancellationToken cancellationToken = default);
+        string Schema { get; }
 
-        Task<Models.Lock> LockAsync(string uri, int depth, LockType type, string owner = null, int timeoutSeconds = 86400, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Models.Lock>> GetLocksAsync(string encodedRelativeUri, CancellationToken cancellationToken = default);
+
+        Task<Models.Lock> LockAsync(
+            string encodedUri,
+            int depth,
+            LockType type,
+            string owner = null,
+            long timeoutSeconds = -1,
+            CancellationToken cancellationToken = default);
 
         Task UnlockAsync(Guid lockToken, CancellationToken cancellationToken = default);
 
-        Task DeleteLockByUriAsync(string uri, CancellationToken cancellationToken = default);
+        Task DeleteLockByUriAsync(string encodedRelativeUri, CancellationToken cancellationToken = default);
     }
 }

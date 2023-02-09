@@ -1,8 +1,11 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-namespace Pomelo.Storage.WebDav.Abstractions.Lock
+using System.Diagnostics.CodeAnalysis;
+
+namespace Pomelo.Storage.WebDAV.Abstractions.Lock
 {
+    [ExcludeFromCodeCoverage]
     public class AsyncSemaphore
     {
         private readonly static Task s_completed = Task.FromResult(true);
@@ -48,6 +51,7 @@ namespace Pomelo.Storage.WebDav.Abstractions.Lock
         }
     }
 
+    [ExcludeFromCodeCoverage]
     public class AsyncLock
     {
         private readonly AsyncSemaphore m_semaphore;

@@ -1,9 +1,12 @@
-﻿using System.Security.Cryptography;
+﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
+// Licensed under the MIT. See LICENSE in the project root for license information.
+
+using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
-using Pomelo.Storage.WebDav.Abstractions.Models;
+using Pomelo.Storage.WebDAV.Abstractions.Models;
 
-namespace Pomelo.Storage.WebDav.Abstractions.Storage
+namespace Pomelo.Storage.WebDAV.Abstractions.Storage
 {
     public class LocalDiskWebDAVStorageProvider : IWebDAVStorageProvider
     {
@@ -19,13 +22,10 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             }
         }
 
+        public string LocalPath => localPath;
+
         public Task<IEnumerable<Item>> GetItemsAsync(string path, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
 
             var ret = new List<Item>();
@@ -88,11 +88,6 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             string path, 
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
             if (!File.Exists(physicalPath))
             {
@@ -106,44 +101,24 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             string path,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
             return Task.FromResult(new FileStream(physicalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite) as Stream);
         }
 
         public Task<bool> IsFileExistsAsync(string path, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
             return Task.FromResult(File.Exists(physicalPath));
         }
 
         public Task<bool> IsDirectoryExistsAsync(string path, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
             return Task.FromResult(Directory.Exists(physicalPath));
         }
 
         public Task<Item> GetItemAsync(string path, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
             if (Directory.Exists(physicalPath))
             {
@@ -185,11 +160,6 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
 
         public Task DeleteItemAsync(string path, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
             if (Directory.Exists(physicalPath))
             {
@@ -314,11 +284,6 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
             IEnumerable<XElement> elementsToRemove, 
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
 
             // Ignore all properties
@@ -365,11 +330,6 @@ namespace Pomelo.Storage.WebDav.Abstractions.Storage
 
         public Task CreateDirectoryAsync(string path, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                path = "";
-            }
-
             var physicalPath = Path.Combine(this.localPath, path);
 
             if (!Directory.Exists(physicalPath))

@@ -1,44 +1,51 @@
-﻿namespace Pomelo.Storage.WebDav.Abstractions.Lock
+﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
+// Licensed under the MIT. See LICENSE in the project root for license information.
+
+namespace Pomelo.Storage.WebDAV.Abstractions.Lock
 {
     public class SimpleWebDavLockManager : IWebDAVLockManager
     {
         private readonly Dictionary<Guid, Models.Lock> Locks = new Dictionary<Guid, Models.Lock>();
         private readonly AsyncSemaphore _lock = new AsyncSemaphore(1);
+        private readonly long maxLockDurationSeconds;
+
+        public SimpleWebDavLockManager(long maxLockDurationSeconds = 86400) 
+        {
+            this.maxLockDurationSeconds = maxLockDurationSeconds;
+        }
+
+        public string Schema => "urn:uuid";
 
         public async Task DeleteLockByUriAsync(
-            string uri,
+            string encodedUri,
             CancellationToken cancellationToken = default)
         {
-            uri = uri.Trim('/');
-
+            await ClearTimeoutLocksAsync();
             var tokens = new List<Guid>();
-            foreach(var _lock in Locks.Values.Where(x => x.Uri.StartsWith(uri)))
+            foreach(var _lock in Locks.Values.Where(x => x.EncodedRelativeUri.StartsWith(encodedUri)))
             {
                 tokens.Add(_lock.LockToken);
             }
-
             foreach(var token in tokens)
             {
                 await UnlockAsync(token, cancellationToken);
             }
         }
 
-        public Task<IEnumerable<Models.Lock>> GetLocksAsync(
-            string uri, 
+        public async Task<IEnumerable<Models.Lock>> GetLocksAsync(
+            string encodedUri, 
             CancellationToken cancellationToken = default)
         {
-            uri = uri.Trim('/');
-
+            await ClearTimeoutLocksAsync();
             var ret = new List<Models.Lock>();
-
             foreach(var x in Locks.Values)
             {
-                if (!uri.StartsWith(x.Uri))
+                if (!encodedUri.StartsWith(x.EncodedRelativeUri))
                 {
                     continue;
                 }
 
-                var postfix = uri.Substring(x.Uri.Length);
+                var postfix = encodedUri.Substring(x.EncodedRelativeUri.Length);
                 if (x.Depth == -1)
                 {
                     ret.Add(x);
@@ -56,33 +63,41 @@
 
                     if (count <= x.Depth)
                     {
-                        ret.Add(x);
+                        if (count == 0 && encodedUri == x.EncodedRelativeUri)
+                        {
+                            ret.Add(x);
+                        }
                     }
                 }
             }
 
-            return Task.FromResult(ret as IEnumerable<Models.Lock>);
+            return ret;
         }
 
         public async Task<Models.Lock> LockAsync(
-            string uri, 
+            string encodedUri, 
             int depth, 
             LockType type, 
             string owner = null,
-            int timeoutSeconds = 86400,
+            long timeoutSeconds = -1,
             CancellationToken cancellationToken = default)
         {
-            uri = uri.Trim('/');
+            await ClearTimeoutLocksAsync();
+
+            if (timeoutSeconds > maxLockDurationSeconds || timeoutSeconds == -1)
+            {
+                timeoutSeconds = maxLockDurationSeconds;
+            }
             IEnumerable<Models.Lock> conflicted = null;
             if (depth == -1)
             {
-                conflicted = Locks.Values.Where(x => x.Uri.StartsWith(uri));
+                conflicted = Locks.Values.Where(x => x.EncodedRelativeUri.StartsWith(encodedUri));
             }
             else
             {
-                foreach(var x in Locks.Values.Where(x => x.Uri.StartsWith(uri)))
+                foreach(var x in Locks.Values.Where(x => x.EncodedRelativeUri.StartsWith(encodedUri)))
                 {
-                    var postfix = x.Uri.Substring(uri.Length);
+                    var postfix = x.EncodedRelativeUri.Substring(encodedUri.Length);
                     var count = 0;
                     for (var i = 0; i < postfix.Length; ++i)
                     {
@@ -94,7 +109,7 @@
 
                     if (count >= depth)
                     {
-                        throw new LockException("The uri is already locked");
+                        throw new LockException("The encodedUri is already locked");
                     }
                 }
 
@@ -103,15 +118,15 @@
             await _lock.WaitAsync();
             try
             {
-                var locks = await GetLocksAsync(uri, cancellationToken);
+                var locks = await GetLocksAsync(encodedUri, cancellationToken);
                 if (locks.Any(x => x.Type == LockType.Exclusive))
                 {
-                    throw new LockException("The uri is already exclusive locked");
+                    throw new LockException("The encodedUri is already exclusive locked");
                 }
 
                 if (type == LockType.Exclusive && locks.Any())
                 {
-                    throw new LockException("The uri is already locked");
+                    throw new LockException("The encodedUri is already locked");
                 }
 
                 var webDavLock = new Models.Lock 
@@ -120,7 +135,8 @@
                     Expire = DateTime.UtcNow.AddSeconds(timeoutSeconds),
                     Owner = owner,
                     Type = type,
-                    Uri = uri
+                    EncodedRelativeUri = encodedUri,
+                    RequestedTimeoutSeconds = timeoutSeconds
                 };
 
                 Locks[webDavLock.LockToken] = webDavLock;
@@ -135,6 +151,8 @@
 
         public async Task UnlockAsync(Guid lockToken, CancellationToken cancellationToken = default)
         {
+            await ClearTimeoutLocksAsync();
+
             await _lock.WaitAsync();
             try
             {
@@ -148,11 +166,35 @@
                 _lock.Release();
             }
         }
+
+        private async Task ClearTimeoutLocksAsync()
+        {
+            try
+            {
+                var tokensToRemove = new List<Guid>();
+
+                foreach (var x in Locks)
+                {
+                    if (x.Value.Expire.HasValue && x.Value.Expire.Value < DateTime.UtcNow)
+                    {
+                        tokensToRemove.Add(x.Key);
+                    }
+                }
+
+                foreach (var token in tokensToRemove)
+                {
+                    Locks.Remove(token);
+                }
+            } 
+            finally 
+            {
+            }
+        }
     }
 
     public static class SimpleWebDavLockManagerExtensions
     {
-        public static IServiceCollection AddSimpleWebDavLockManager(this IServiceCollection services)
-            => services.AddSingleton<IWebDAVLockManager, SimpleWebDavLockManager>();
+        public static IServiceCollection AddSimpleWebDavLockManager(this IServiceCollection services, long maxLockDurationSeconds = 86400)
+            => services.AddSingleton<IWebDAVLockManager, SimpleWebDavLockManager>(x => new SimpleWebDavLockManager(maxLockDurationSeconds));
     }
 }

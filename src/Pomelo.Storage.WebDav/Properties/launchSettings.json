@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Pomelo.Storage.WebDav": {
+    "Pomelo.Storage.WebDAV": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

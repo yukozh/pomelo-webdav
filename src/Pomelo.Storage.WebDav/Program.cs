@@ -1,9 +1,13 @@
-using Pomelo.Storage.WebDav.Abstractions;
-using Pomelo.Storage.WebDav.Abstractions.Lock;
-using Pomelo.Storage.WebDav.Abstractions.Storage;
-using System.Reflection;
+// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
+// Licensed under the MIT. See LICENSE in the project root for license information.
 
-namespace Pomelo.Storage.WebDav
+using System.Reflection;
+using Pomelo.Storage.WebDAV.Abstractions;
+using Pomelo.Storage.WebDAV.Abstractions.Factory;
+using Pomelo.Storage.WebDAV.Abstractions.Lock;
+using Pomelo.Storage.WebDAV.Abstractions.Storage;
+
+namespace Pomelo.Storage.WebDAV
 {
     public class Program
     {
@@ -15,15 +19,16 @@ namespace Pomelo.Storage.WebDav
                 x.Limits.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024L;
             });
             var storagePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "storage");
-            builder.Services.AddLocalDiskWebDAVStorageProvider(storagePath)
+            builder.Services.AddDefaultWebDAVHttpHandlerFactory()
+                .AddLocalDiskWebDAVStorageProvider(storagePath)
                 .AddSimpleWebDavLockManager();
             var app = builder.Build();
 
-            app.MapGet("/", () => "Hello World!");
+            app.MapGet("/", () => "Pomelo WebDAV server is running!");
             app.UseRouting();
             app.UseEndpoints(endpoints => 
             {
-                endpoints.MapWebDAV("/{*path}");
+                endpoints.MapPomeloWebDAV("/{*path}");
             });
             app.Run();
         }

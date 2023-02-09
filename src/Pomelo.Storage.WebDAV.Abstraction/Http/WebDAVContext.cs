@@ -1,0 +1,346 @@
+﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
+// Licensed under the MIT. See LICENSE in the project root for license information.
+
+using System.Security.Claims;
+using System.Text;
+using System.Web;
+using System.Xml.Linq;
+using Pomelo.Storage.WebDAV.Abstractions.Lock;
+using Pomelo.Storage.WebDAV.Abstractions.Storage;
+
+namespace Pomelo.Storage.WebDAV.Abstractions.Http
+{
+    public class WebDAVContext
+    {
+        private IWebDAVStorageProvider storageProvider;
+        private IWebDAVLockManager lockManager;
+
+        public WebDAVContext(
+            HttpContext httpContext, long defaultRequestMaxSize = 1024 * 1024 * 30)
+        {
+            HttpContext = httpContext;
+            DefaultRequestMaxSize = defaultRequestMaxSize;
+        }
+
+        private long DefaultRequestMaxSize { get; init; }
+
+        internal static Dictionary<int, string> StatusCodeMapping = new Dictionary<int, string>
+        {
+            [100] = "Continue",
+            [101] = "Switching Protocols",
+            [200] = "OK",
+            [201] = "Created",
+            [202] = "Accepted",
+            [203] = "Non-Authoritative Information",
+            [204] = "No Content",
+            [205] = "Reset Content",
+            [206] = "Partial Content",
+            [207] = "Multi-Status",
+            [300] = "Multiple Choices",
+            [301] = "Moved Permanently",
+            [302] = "Found",
+            [303] = "See Other",
+            [304] = "Not Modified",
+            [305] = "Use Proxy",
+            [307] = "Temporary Redirect",
+            [400] = "Bad Request",
+            [401] = "Unauthorized",
+            [402] = "Payment Required",
+            [403] = "Forbidden",
+            [404] = "Not Found",
+            [405] = "Method Not Allowed",
+            [406] = "Not Acceptable",
+            [407] = "Proxy Authentication Required",
+            [408] = "Request Time-out",
+            [409] = "Conflict",
+            [410] = "Gone",
+            [411] = "Length Required",
+            [412] = "Precondition Failed",
+            [413] = "Request Entity Too Large",
+            [414] = "Request-URI Too Large",
+            [415] = "Unsupported Media Type",
+            [416] = "Requested range not satisfiable",
+            [417] = "Expectation Failed",
+            [422] = "Unprocessable Entity",
+            [424] = "Failed Dependency",
+            [500] = "Internal Server Error",
+            [501] = "Not Implemented",
+            [502] = "Bad Gateway",
+            [503] = "Service Unavailable",
+            [504] = "Gateway Time-out"
+        };
+
+        public HttpContext HttpContext { get; init; }
+
+        public IWebDAVStorageProvider Storage 
+        {
+            get 
+            {
+                if (storageProvider == null)
+                {
+                    storageProvider = RequestServices.GetRequiredService<IWebDAVStorageProvider>();
+                }
+
+                return storageProvider;
+            }
+        }
+
+        public IWebDAVLockManager LockManager
+        {
+            get 
+            {
+                if (lockManager == null)
+                {
+                    lockManager = RequestServices.GetRequiredService<IWebDAVLockManager>();
+                }
+
+                return lockManager;
+            }
+        }
+
+        public ClaimsPrincipal User => HttpContext.User;
+
+        public virtual IServiceProvider RequestServices 
+            => HttpContext.RequestServices;
+
+        public virtual CancellationToken RequestAborted 
+            => HttpContext.RequestAborted;
+
+        public virtual Stream RequestStream 
+            => HttpContext.Request.Body;
+
+        public virtual int Depth 
+            => HttpContext.Request.Headers.ContainsKey("Depth")
+            ? Convert.ToInt32(HttpContext.Request.Headers["Depth"].ToString())
+            : 0;
+
+        public virtual bool Overwrite
+            => HttpContext.Request.Headers.ContainsKey("Overwrite")
+            ? HttpContext.Request.Headers["Overwrite"].ToString().ToUpper() == "T"
+            : false;
+
+        public virtual long Timeout
+        {
+            get 
+            {
+                var timeoutString = HttpContext.Request.Headers.ContainsKey("Timeout")
+                    ? HttpContext.Request.Headers["Timeout"].ToString()
+                    : null;
+
+                if (!timeoutString.StartsWith("Second-", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new NotSupportedException("Timeout only supports second");
+                }
+
+                return Convert.ToInt64(timeoutString.Substring("Second-".Length));
+            }
+        }
+
+        public string Protocol => HttpContext.Request.Protocol;
+
+        public string Method => HttpContext.Request.Method.ToUpper();
+
+        public virtual string DecodedRelativeUri 
+            => (HttpContext.Request.RouteValues["path"] as string ?? "").Trim('/');
+
+        public virtual string EncodedRelativeUri 
+            => string.Join('/', DecodedRelativeUri.Split('/').Select(x => HttpUtility.UrlPathEncode(x)));
+
+        public virtual string EncodedFullUri => EncodedBaseUri + "/" + EncodedRelativeUri;
+
+        public virtual string GetReasonPhase(int statusCode)
+            => StatusCodeMapping.ContainsKey(statusCode) ? StatusCodeMapping[statusCode] : "Unknown";
+
+        public virtual string EncodedBaseUri
+        {
+            get 
+            {
+                var baseUrlBuilder = new StringBuilder();
+                baseUrlBuilder.Append(HttpContext.Request.Scheme);
+                baseUrlBuilder.Append("://");
+                baseUrlBuilder.Append(HttpContext.Request.Host.Value);
+                if (HttpContext.Request.RouteValues["path"] != null)
+                {
+                    var path = (HttpContext.Request.RouteValues["path"] as string).TrimEnd('/');
+                    var fullEndpoint = HttpContext.Request.Path.Value.TrimEnd('/');
+                    var baseEndpoint = fullEndpoint.Substring(0, fullEndpoint.Length - path.Length).TrimEnd('/');
+                    baseUrlBuilder.Append(baseEndpoint);
+                }
+                else
+                {
+                    baseUrlBuilder.Append(HttpContext.Request.Path.Value.TrimEnd('/'));
+                }
+                var baseUrl = baseUrlBuilder.ToString();
+                return HttpUtility.UrlPathEncode(baseUrl.Trim('/'));
+            }
+        }
+
+        public virtual bool IsResponded { get; protected set; }
+
+        public virtual bool IsRequestBodyConsumed { get; set; }
+
+        public virtual string EncodedFullDestination
+        {
+            get
+            {
+                return HttpContext.Request.Headers["Destination"].ToString();
+            }
+        }
+
+        public virtual string DecodedFullDestination
+        {
+            get
+            {
+                return DecodeUri(EncodedFullDestination);
+            }
+        }
+
+        public virtual string EncodedRelativeDestination
+        {
+            get
+            {
+                return ConvertFullEncodedUriToRelativeEncodedUri(EncodedBaseUri, HttpContext.Request.Headers["Destination"].ToString().Trim('/'));
+            }
+        }
+
+        public virtual string DecodedRelativeDestination
+        {
+            get
+            {
+                return ConvertFullEncodedUriToRelativeDecodedUri(EncodedBaseUri, HttpContext.Request.Headers["Destination"].ToString().Trim('/'));
+            }
+        }
+
+        public virtual string RequestBodyString { get; protected set; }
+
+        public virtual async Task RespondWihtoutBodyAsync(
+            int statusCode,
+            Dictionary<string, string> headers = null)
+        { 
+            if (IsResponded)
+            {
+                throw new InvalidOperationException("The request is already responded.");
+            }
+
+            ConsumeHeaders(headers);
+            HttpContext.Response.StatusCode = statusCode;
+            await HttpContext.Response.CompleteAsync();
+            IsResponded = true;
+        }
+
+        public virtual async Task RespondOkAsync(Dictionary<string, string> headers = null)
+        {
+            await RespondWihtoutBodyAsync(200, headers);
+        }
+
+        public virtual async Task RespondCreatedAsync(Dictionary<string, string> headers = null)
+        {
+            await RespondWihtoutBodyAsync(201, headers);
+        }
+
+        public virtual async Task RespondNotFoundAsync(Dictionary<string, string> headers = null)
+        {
+            await RespondWihtoutBodyAsync(404, headers);
+        }
+
+        public virtual async Task RespondXmlAsync(
+            int statusCode,
+            string xml,
+            Dictionary<string, string> headers = null)
+        {
+            if (IsResponded)
+            {
+                throw new InvalidOperationException("The request is already responded.");
+            }
+
+            ConsumeHeaders(headers);
+            HttpContext.Response.StatusCode = statusCode;
+            HttpContext.Response.ContentLength = xml.Length;
+            HttpContext.Response.ContentType = "text/xml";
+            await HttpContext.Response.WriteAsync(xml);
+            await HttpContext.Response.CompleteAsync();
+            IsResponded = true;
+        }
+
+        public virtual async Task<bool> EnsureRequestSizeAsync()
+        {
+            if (HttpContext.Request.ContentLength.HasValue
+                && HttpContext.Request.ContentLength.Value > DefaultRequestMaxSize)
+            {
+                HttpContext.Request.Body.Close();
+                await RespondWihtoutBodyAsync(413);
+                return false;
+            }
+
+            return true;
+        }
+
+        public virtual async Task<string> ReadRequestBodyAsStringAsync()
+        {
+            if (!await EnsureRequestSizeAsync())
+            {
+                return null;
+            }
+
+            if (!IsRequestBodyConsumed)
+            {
+                using var streamReader = new StreamReader(HttpContext.Request.Body, Encoding.UTF8);
+                RequestBodyString = await streamReader.ReadToEndAsync();
+                IsRequestBodyConsumed = true;
+            }
+
+            return RequestBodyString;
+        }
+
+        public virtual async Task<XDocument> ReadRequestBodyAsXDocumentAsync() 
+        {
+            if (!IsRequestBodyConsumed)
+            {
+                await ReadRequestBodyAsStringAsync();
+            }
+
+            return XDocument.Parse(RequestBodyString);
+        }
+
+        protected virtual void ConsumeHeaders(Dictionary<string, string> headers)
+        {
+            if (IsResponded)
+            {
+                throw new InvalidOperationException("The request is already responded.");
+            }
+
+            if (headers == null)
+            {
+                return;
+            }
+
+            foreach (var header in headers)
+            {
+                HttpContext.Response.Headers[header.Key] = header.Value;
+            }
+        }
+
+        public static string DecodeUri(string encodedUri) 
+            => HttpUtility.UrlDecode(encodedUri);
+
+        public static string EncodeUri(string decodedUri)
+            => HttpUtility.UrlPathEncode(decodedUri);
+
+        public static string ConvertFullEncodedUriToRelativeEncodedUri(string baseUri, string fullUri)
+            => fullUri.Substring(baseUri.Length).Trim('/');
+
+        public static string ConvertFullEncodedUriToRelativeDecodedUri(string baseUri, string fullUri)
+            => DecodeUri(ConvertFullEncodedUriToRelativeEncodedUri(baseUri, fullUri));
+
+        public static string GetContainerFolder(string path)
+        {
+            var index = path.LastIndexOf('/');
+            if (index < 1)
+            {
+                return "";
+            }
+
+            return path.Substring(0, index).Trim('/');
+        }
+}
+}

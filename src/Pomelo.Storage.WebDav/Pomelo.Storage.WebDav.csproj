@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Pomelo.Storage.WebDav.Abstraction\Pomelo.Storage.WebDav.Abstractions.csproj" />
+    <ProjectReference Include="..\Pomelo.Storage.WebDav.Abstraction\Pomelo.Storage.WebDAV.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>
