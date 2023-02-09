@@ -1,12 +1,13 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
-using Pomelo.Storage.WebDAV.Abstractions.Http;
-using Pomelo.Storage.WebDAV.Abstractions.Models;
+using Pomelo.Storage.WebDAV.Http;
+using Pomelo.Storage.WebDAV.Models;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Utils
+namespace Pomelo.Storage.WebDAV.Utils
 {
     internal static class PropPatchResponseBuildHelper
     {

@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Pomelo.Storage.WebDAV": {
+    "Pomelo.Storage.WebDAV.Sample": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
@@ -21,7 +21,7 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:37283",
+      "applicationUrl": "http://localhost:5000",
       "sslPort": 44377
     }
   }

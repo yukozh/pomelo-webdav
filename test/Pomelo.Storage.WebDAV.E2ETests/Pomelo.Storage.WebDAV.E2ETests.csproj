@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Pomelo.Storage.WebDAV\Pomelo.Storage.WebDAV.csproj" />
+    <ProjectReference Include="..\..\sample\Pomelo.Storage.WebDAV.Sample\Pomelo.Storage.WebDAV.Sample.csproj" />
   </ItemGroup>
 
 </Project>

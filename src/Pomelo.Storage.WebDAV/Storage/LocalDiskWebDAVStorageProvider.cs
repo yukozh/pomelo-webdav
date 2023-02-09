@@ -1,12 +1,19 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
-using Pomelo.Storage.WebDAV.Abstractions.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Pomelo.Storage.WebDAV.Models;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Storage
+namespace Pomelo.Storage.WebDAV.Storage
 {
     public class LocalDiskWebDAVStorageProvider : IWebDAVStorageProvider
     {
@@ -265,7 +272,6 @@ namespace Pomelo.Storage.WebDAV.Abstractions.Storage
             // Copy each file into the new directory.
             foreach (FileInfo fi in source.GetFiles())
             {
-                Console.WriteLine(@"Copying {0}\{1}", target.FullName, fi.Name);
                 fi.CopyTo(Path.Combine(target.FullName, fi.Name), true);
             }
 

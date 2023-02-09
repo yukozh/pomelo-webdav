@@ -3,8 +3,10 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<LangVersion>11.0</LangVersion>
-		<OutputType>Library</OutputType>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Pomelo.Storage.WebDAV\Pomelo.Storage.WebDAV.csproj" />
+	</ItemGroup>
 
 </Project>

@@ -1,12 +1,17 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
-using Pomelo.Storage.WebDAV.Abstractions.Lock;
-using Pomelo.Storage.WebDAV.Abstractions.Models;
+using Pomelo.Storage.WebDAV.Lock;
+using Pomelo.Storage.WebDAV.Models;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Utils
+namespace Pomelo.Storage.WebDAV.Utils
 {
     internal static class PropFindResponseBuildHelper
     {

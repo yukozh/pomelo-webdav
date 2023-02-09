@@ -1,14 +1,22 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
 using System.Xml.Linq;
-using Pomelo.Storage.WebDAV.Abstractions.Lock;
-using Pomelo.Storage.WebDAV.Abstractions.Storage;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Pomelo.Storage.WebDAV.Lock;
+using Pomelo.Storage.WebDAV.Storage;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Http
+namespace Pomelo.Storage.WebDAV.Http
 {
     public class WebDAVContext
     {
@@ -22,7 +30,11 @@ namespace Pomelo.Storage.WebDAV.Abstractions.Http
             DefaultRequestMaxSize = defaultRequestMaxSize;
         }
 
+#if NET5_0_OR_GREATER
         private long DefaultRequestMaxSize { get; init; }
+#else
+        private long DefaultRequestMaxSize { get; set; }
+#endif
 
         internal static Dictionary<int, string> StatusCodeMapping = new Dictionary<int, string>
         {
@@ -70,7 +82,11 @@ namespace Pomelo.Storage.WebDAV.Abstractions.Http
             [504] = "Gateway Time-out"
         };
 
+#if NET5_0_OR_GREATER
         public HttpContext HttpContext { get; init; }
+#else
+        public HttpContext HttpContext { get; set; }
+#endif
 
         public IWebDAVStorageProvider Storage 
         {

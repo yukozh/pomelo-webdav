@@ -1,10 +1,11 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-using Pomelo.Storage.WebDAV.Abstractions.Lock;
+using System;
 using System.Diagnostics.CodeAnalysis;
+using Pomelo.Storage.WebDAV.Lock;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Models
+namespace Pomelo.Storage.WebDAV.Models
 {
     [ExcludeFromCodeCoverage]
     public class Lock

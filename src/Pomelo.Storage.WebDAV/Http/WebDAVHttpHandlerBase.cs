@@ -1,10 +1,15 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
-using Pomelo.Storage.WebDAV.Abstractions.Lock;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Pomelo.Storage.WebDAV.Lock;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Http
+namespace Pomelo.Storage.WebDAV.Http
 {
     public abstract class WebDAVHttpHandlerBase : WebDAVContext, IWebDAVHttpHandler
     {

@@ -1,7 +1,12 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Lock
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Pomelo.Storage.WebDAV.Lock
 {
     public enum LockType
     {

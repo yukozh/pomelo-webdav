@@ -1,9 +1,11 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-using Pomelo.Storage.WebDAV.Abstractions.Http;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Pomelo.Storage.WebDAV.Http;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Factory
+namespace Pomelo.Storage.WebDAV.Factory
 {
     public class DefaultWebDAVHttpHandlerFactory : IWebDAVHttpHandlerFactory
     {

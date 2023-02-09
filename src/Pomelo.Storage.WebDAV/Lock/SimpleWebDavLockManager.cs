@@ -1,7 +1,14 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Lock
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Pomelo.Storage.WebDAV.Lock
 {
     public class SimpleWebDavLockManager : IWebDAVLockManager
     {
@@ -33,7 +40,7 @@ namespace Pomelo.Storage.WebDAV.Abstractions.Lock
         }
 
         public async Task<IEnumerable<Models.Lock>> GetLocksAsync(
-            string encodedUri, 
+            string encodedUri,
             CancellationToken cancellationToken = default)
         {
             await ClearTimeoutLocksAsync();

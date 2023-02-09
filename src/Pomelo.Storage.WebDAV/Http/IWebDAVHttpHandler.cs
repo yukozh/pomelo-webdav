@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Http
+using System.Threading.Tasks;
+
+namespace Pomelo.Storage.WebDAV.Http
 {
     public interface IWebDAVHttpHandler
     {

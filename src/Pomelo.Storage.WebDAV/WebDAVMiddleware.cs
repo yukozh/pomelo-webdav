@@ -1,10 +1,15 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-using Pomelo.Storage.WebDAV.Abstractions.Factory;
-using Pomelo.Storage.WebDAV.Abstractions.Lock;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Pomelo.Storage.WebDAV.Factory;
+using Pomelo.Storage.WebDAV.Lock;
 
-namespace Pomelo.Storage.WebDAV.Abstractions
+namespace Pomelo.Storage.WebDAV
 {
     public partial class WebDAVMiddleware
     {
@@ -18,9 +23,7 @@ namespace Pomelo.Storage.WebDAV.Abstractions
         public async Task Invoke(HttpContext httpContext)
         {
             var method = httpContext.Request.Method.ToUpper();
-
-            httpContext.Response.Headers.Server = "Pomelo WebDAV Server";
-
+            httpContext.Response.Headers["Server"] = "Pomelo WebDAV Server";
             var factory = httpContext.RequestServices.GetRequiredService<IWebDAVHttpHandlerFactory>();
             var handler = factory.CreateHandler(httpContext);
             var lockManager = httpContext.RequestServices.GetRequiredService<IWebDAVLockManager>();

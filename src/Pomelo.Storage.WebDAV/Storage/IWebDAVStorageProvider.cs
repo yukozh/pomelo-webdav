@@ -1,10 +1,14 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
-using Pomelo.Storage.WebDAV.Abstractions.Models;
+using Pomelo.Storage.WebDAV.Models;
 
-namespace Pomelo.Storage.WebDAV.Abstractions.Storage
+namespace Pomelo.Storage.WebDAV.Storage
 {
     public interface IWebDAVStorageProvider
     {

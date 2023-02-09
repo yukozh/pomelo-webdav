@@ -3,12 +3,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using Pomelo.Storage.WebDAV.Abstractions;
-using Pomelo.Storage.WebDAV.Abstractions.Factory;
-using Pomelo.Storage.WebDAV.Abstractions.Lock;
-using Pomelo.Storage.WebDAV.Abstractions.Storage;
+using Pomelo.Storage.WebDAV.Factory;
+using Pomelo.Storage.WebDAV.Lock;
+using Pomelo.Storage.WebDAV.Storage;
 
-namespace Pomelo.Storage.WebDAV
+namespace Pomelo.Storage.WebDAV.Sample
 {
     [ExcludeFromCodeCoverage]
     public class Program
@@ -20,12 +19,12 @@ namespace Pomelo.Storage.WebDAV
             {
                 x.Limits.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024L;
             });
+
             var storagePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "storage");
             builder.Services.AddDefaultWebDAVHttpHandlerFactory()
                 .AddLocalDiskWebDAVStorageProvider(storagePath)
                 .AddSimpleWebDavLockManager();
             var app = builder.Build();
-
             app.MapGet("/", () => "Pomelo WebDAV server is running!");
             app.UseRouting();
             app.UseEndpoints(endpoints => 

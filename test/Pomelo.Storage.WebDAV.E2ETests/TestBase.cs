@@ -2,10 +2,9 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Pomelo.Storage.WebDAV.Abstractions;
-using Pomelo.Storage.WebDAV.Abstractions.Factory;
-using Pomelo.Storage.WebDAV.Abstractions.Lock;
-using Pomelo.Storage.WebDAV.Abstractions.Storage;
+using Pomelo.Storage.WebDAV.Factory;
+using Pomelo.Storage.WebDAV.Lock;
+using Pomelo.Storage.WebDAV.Storage;
 
 namespace Pomelo.Storage.WebDAV.E2ETests
 {
