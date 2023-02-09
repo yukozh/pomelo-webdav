@@ -161,7 +161,7 @@ public interface IWebDAVHttpHandler
 }
 ```
 
-You can also define a class inherit from `DefaultWebDAVHttpHandler`. [DefaultWebDAVHttpHandler.cs](https://github.com/yukozh/pomelo-webdav/blob/main/src/Pomelo.Storage.WebDAV/Http/DefaultWebDAVHttpHandler.cs)
+You can also define a class inherit from `DefaultWebDAVHttpHandler` to override existed methods. [DefaultWebDAVHttpHandler.cs](https://github.com/yukozh/pomelo-webdav/blob/main/src/Pomelo.Storage.WebDAV/Http/DefaultWebDAVHttpHandler.cs)
 
 ## Contact Me
 
