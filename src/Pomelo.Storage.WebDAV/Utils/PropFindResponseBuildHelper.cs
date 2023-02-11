@@ -13,7 +13,7 @@ using Pomelo.Storage.WebDAV.Models;
 
 namespace Pomelo.Storage.WebDAV.Utils
 {
-    internal static class PropFindResponseBuildHelper
+    public static class PropFindResponseBuildHelper
     {
         private static string ParseUrl(string url)
         {

@@ -9,7 +9,7 @@ using Pomelo.Storage.WebDAV.Models;
 
 namespace Pomelo.Storage.WebDAV.Utils
 {
-    internal static class PropPatchResponseBuildHelper
+    public static class PropPatchResponseBuildHelper
     {
         public static readonly IReadOnlyList<XElement> EmptyXElementList = new List<XElement>();
 
