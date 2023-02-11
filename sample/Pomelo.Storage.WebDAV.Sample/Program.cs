@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Pomelo.Storage.WebDAV.Factory;
 using Pomelo.Storage.WebDAV.Lock;
 using Pomelo.Storage.WebDAV.Sample.Authentication;
+using Pomelo.Storage.WebDAV.Sample.WebDAVMiddlewares;
 using Pomelo.Storage.WebDAV.Storage;
 
 namespace Pomelo.Storage.WebDAV.Sample
@@ -31,7 +32,8 @@ namespace Pomelo.Storage.WebDAV.Sample
                 .AddLocalDiskWebDAVStorageProvider(storagePath)
                 .AddSimpleWebDavLockManager()
                 .AddAuthorization()
-                .AddBasicAuthenticationHandler();
+                .AddBasicAuthenticationHandler()
+                .AddSampleMiddleware();
 
             var app = builder.Build();
             app.UseRouting();

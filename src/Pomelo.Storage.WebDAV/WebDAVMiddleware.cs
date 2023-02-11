@@ -1,21 +1,26 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Pomelo.Storage.WebDAV.Factory;
+using Pomelo.Storage.WebDAV.Http;
 using Pomelo.Storage.WebDAV.Lock;
+using Pomelo.Storage.WebDAV.Middleware;
 
 namespace Pomelo.Storage.WebDAV
 {
+    public delegate Task WebDAVMiddlewareRequestDelegate(WebDAVContext context);
+
     public partial class WebDAVMiddleware
     {
         private readonly RequestDelegate _next;
 
-        public WebDAVMiddleware(RequestDelegate next)
+        public WebDAVMiddleware(RequestDelegate next, IEnumerable<IWebDAVMiddleware> middlewares)
         {
             _next = next;
         }
@@ -24,6 +29,26 @@ namespace Pomelo.Storage.WebDAV
         {
             var method = httpContext.Request.Method.ToUpper();
             httpContext.Response.Headers["Server"] = "Pomelo WebDAV Server";
+
+            // Execute Middlewares
+            var webDAVcontext = new WebDAVContext(httpContext);
+            var middlewares = httpContext.RequestServices.GetServices<IWebDAVMiddleware>();
+            foreach(var middleware in middlewares)
+            {
+                var executed = true;
+                WebDAVMiddlewareRequestDelegate action = (context) =>
+                {
+                    executed = false;
+                    return Task.CompletedTask;
+                };
+                await middleware.Invoke(webDAVcontext, action);
+                if (executed)
+                {
+                    return;
+                }
+            }
+
+            // Default behavior
             var factory = httpContext.RequestServices.GetRequiredService<IWebDAVHttpHandlerFactory>();
             var handler = factory.CreateHandler(httpContext);
             var lockManager = httpContext.RequestServices.GetRequiredService<IWebDAVLockManager>();
@@ -98,7 +123,8 @@ namespace Pomelo.Storage.WebDAV
     public static class WebDAVMiddlewareExtensions
     {
         public static IEndpointConventionBuilder MapPomeloWebDAV(
-        this IEndpointRouteBuilder endpoints, string pattern = "/{*path}")
+            this IEndpointRouteBuilder endpoints,
+            string pattern = "/{*path}")
         {
             var pipeline = endpoints.CreateApplicationBuilder()
                 .UseMiddleware<WebDAVMiddleware>()
