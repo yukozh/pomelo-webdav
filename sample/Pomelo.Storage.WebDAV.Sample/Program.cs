@@ -2,9 +2,9 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using Pomelo.Storage.WebDAV.Factory;
 using Pomelo.Storage.WebDAV.Lock;
+using Pomelo.Storage.WebDAV.Sample.Authentication;
 using Pomelo.Storage.WebDAV.Storage;
 
 namespace Pomelo.Storage.WebDAV.Sample
@@ -12,6 +12,8 @@ namespace Pomelo.Storage.WebDAV.Sample
     [ExcludeFromCodeCoverage]
     public class Program
     {
+        internal static IConfiguration Configuration;
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -19,14 +21,24 @@ namespace Pomelo.Storage.WebDAV.Sample
             {
                 x.Limits.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024L;
             });
-
-            var storagePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "storage");
+            Configuration = builder.Configuration;
+            var storagePath = builder.Configuration["StoragePath"];
+            if (!Directory.Exists(storagePath))
+            {
+                Directory.CreateDirectory(storagePath);
+            }
             builder.Services.AddDefaultWebDAVHttpHandlerFactory()
                 .AddLocalDiskWebDAVStorageProvider(storagePath)
-                .AddSimpleWebDavLockManager();
+                .AddSimpleWebDavLockManager()
+                .AddAuthorization()
+                .AddBasicAuthenticationHandler();
+
             var app = builder.Build();
-            app.MapGet("/", () => "Pomelo WebDAV server is running!");
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.UseEnforceAuthroizedMiddleware();
+            app.MapGet("/", () => "Pomelo WebDAV server is running!");
             app.UseEndpoints(endpoints => 
             {
                 endpoints.MapPomeloWebDAV("/{*path}");

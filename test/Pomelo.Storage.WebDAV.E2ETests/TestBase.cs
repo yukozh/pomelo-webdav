@@ -55,7 +55,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
                 StartInfo = new ProcessStartInfo 
                 {
                     FileName = "net",
-                    Arguments = "use P: http://localhost:7000",
+                    Arguments = "use P: http://localhost:7000 /user:admin 123456",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
