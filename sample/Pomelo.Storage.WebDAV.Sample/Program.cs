@@ -33,13 +33,13 @@ namespace Pomelo.Storage.WebDAV.Sample
                 .AddSimpleWebDavLockManager()
                 .AddAuthorization()
                 .AddBasicAuthenticationHandler()
-                .AddSampleMiddleware();
+                .AddSampleMiddleware()
+                .AddBasicAuthMiddleware();
 
             var app = builder.Build();
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseEnforceAuthroizedMiddleware();
             app.MapGet("/", () => "Pomelo WebDAV server is running!");
             app.UseEndpoints(endpoints => 
             {
