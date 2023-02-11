@@ -99,7 +99,8 @@ namespace Pomelo.Storage.WebDAV.Http
                 ["Accept-Ranges"] = "bytes",
                 ["Etag"] = info.Properties.Etag,
                 ["Last-Modified"] = (info.Properties.LastModified ?? DateTime.UtcNow).ToString("r"),
-                ["Content-Length"] = info.Properties.ContentLength.ToString()
+                ["Content-Length"] = info.Properties.ContentLength.ToString(),
+                ["Content-Type"] = "application/octet-stream"
             });
         }
 
