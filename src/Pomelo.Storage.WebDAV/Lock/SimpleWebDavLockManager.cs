@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Pomelo.Storage.WebDAV.Lock
 {
@@ -95,14 +95,15 @@ namespace Pomelo.Storage.WebDAV.Lock
             {
                 timeoutSeconds = maxLockDurationSeconds;
             }
-            IEnumerable<Models.Lock> conflicted = null;
+            List<Models.Lock> conflicted = null;
             if (depth == -1)
             {
-                conflicted = Locks.Values.Where(x => x.EncodedRelativeUri.StartsWith(encodedUri));
+                conflicted = Locks.Values.Where(x => x.EncodedRelativeUri.StartsWith(encodedUri)).ToList();
             }
             else
             {
-                foreach(var x in Locks.Values.Where(x => x.EncodedRelativeUri.StartsWith(encodedUri)))
+                conflicted = new List<Models.Lock>();
+                foreach (var x in Locks.Values.Where(x => x.EncodedRelativeUri.StartsWith(encodedUri)))
                 {
                     var postfix = x.EncodedRelativeUri.Substring(encodedUri.Length);
                     var count = 0;
@@ -116,10 +117,15 @@ namespace Pomelo.Storage.WebDAV.Lock
 
                     if (count >= depth)
                     {
-                        throw new LockException("The encodedUri is already locked");
+                        conflicted.Add(x);
                     }
                 }
+            }
 
+            if (type == LockType.Exclusive && conflicted.Count > 0 
+                || type == LockType.Shared && conflicted.Any(x => x.Type == LockType.Exclusive))
+            {
+                throw new LockException("The encodedUri is already locked");
             }
 
             await _lock.WaitAsync();
