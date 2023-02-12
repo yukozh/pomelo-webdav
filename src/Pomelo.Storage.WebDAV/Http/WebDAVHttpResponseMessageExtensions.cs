@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -74,10 +75,30 @@ namespace Pomelo.Storage.WebDAV.Http
 
         #region OPTIONS
         public static IEnumerable<string> ToOptionsResult(
-            this HttpResponseMessage response, 
-            CancellationToken cancellationToken = default) 
+            this HttpResponseMessage response) 
         {
             return response.Content.Headers.GetValues("Allow");
+        }
+        #endregion
+
+        #region HEAD
+        public static HeadResult ToHeadResult(
+            this HttpResponseMessage response)
+        {
+            return new HeadResult
+            {
+                ContentLength = response.Content.Headers.ContentLength ?? 0,
+                AcceptRanges = response.Headers.Contains("Accept-Ranges") 
+                    ? string.Join(",", response.Headers.GetValues("Accept-Ranges"))
+                    : null,
+                ContentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream",
+                Etag = response.Headers.Contains("Etag") 
+                    ? string.Join(",", response.Headers.GetValues("Etag"))
+                    : null,
+                LastModified = response.Content.Headers.Contains("Last-Modified")
+                    ? Convert.ToDateTime(response.Content.Headers.GetValues("Last-Modified").First())
+                    : null
+            };
         }
         #endregion
     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Routing;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -96,6 +97,16 @@ namespace Pomelo.Storage.WebDAV
             CancellationToken cancellationToken = default)
         {
             using var message = new HttpRequestMessage(new HttpMethod("OPTIONS"), uri);
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
+        #region HEAD
+        public async Task<HttpResponseMessage> HeadAsync(
+            string uri,
+            CancellationToken cancellationToken = default)
+        {
+            using var message = new HttpRequestMessage(new HttpMethod("HEAD"), uri);
             return await SendAsync(message, cancellationToken);
         }
         #endregion
