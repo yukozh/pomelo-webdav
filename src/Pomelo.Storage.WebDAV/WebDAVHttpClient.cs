@@ -199,6 +199,16 @@ namespace Pomelo.Storage.WebDAV
         }
         #endregion
 
+        #region MKCOL
+        public async Task<HttpResponseMessage> MkcolAsync(
+            string uri,
+            CancellationToken cancellationToken = default)
+        {
+            using var message = new HttpRequestMessage(new HttpMethod("MKCOL"), uri);
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
         #region Misc
         protected virtual string BuildPropertiesWithNamespace(
             IEnumerable<(string shortedNamespace, string name)> properties)

@@ -153,5 +153,25 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             Assert.True(response.IsSuccessStatusCode);
             Assert.True(response2.IsSuccessStatusCode);
         }
+
+        [Fact]
+        public async Task MkcolTest()
+        {
+            // Arrange
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
+            var testPath = Path.Combine(StoragePath, "client_tests");
+            if (!Directory.Exists(testPath))
+            {
+                Directory.CreateDirectory(testPath);
+            }
+
+            // Act
+            using var response = await client.MkcolAsync("/client_tests/test_folder");
+
+            // Assert
+            var response2 = await client.PropFindAsync("/client_tests/test_folder", 0);
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.True(response2.IsSuccessStatusCode);
+        }
     }
 }
