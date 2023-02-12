@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Routing;
-using Pomelo.Storage.WebDAV.Lock;
+﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
+// Licensed under the MIT. See LICENSE in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Pomelo.Storage.WebDAV.Lock;
 
 namespace Pomelo.Storage.WebDAV
 {

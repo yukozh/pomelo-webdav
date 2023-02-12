@@ -1,5 +1,6 @@
-﻿using Pomelo.Storage.WebDAV.Http;
+﻿
 using System.Xml.Linq;
+using Pomelo.Storage.WebDAV.Http;
 
 namespace Pomelo.Storage.WebDAV.E2ETests
 {
