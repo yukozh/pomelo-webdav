@@ -121,5 +121,52 @@ namespace Pomelo.Storage.WebDAV.Http
             });
         }
         #endregion
+
+        #region LOCK
+        public static async Task<LockResult> ToLockResultAsync(
+            this HttpResponseMessage response)
+        {
+            if (!AcceptedContentTypes.Contains(response.Content.Headers.ContentType.MediaType.ToLower()))
+            {
+                throw new InvalidDataException("Response body is not XML");
+            }
+
+            var ret = new LockResult();
+
+            var doc = XDocument.Parse(await response.Content.ReadAsStringAsync());
+            var token = doc.Root.Descendants("{DAV:}locktoken").FirstOrDefault();
+            if (token == null)
+            {
+                throw new InvalidDataException("Missing lock token");
+            }
+            ret.LockToken = token.Descendants("{DAV:}href").First().Value;
+
+            var timeout = doc.Root.Descendants("{DAV:}timeout").FirstOrDefault();
+            if (timeout == null)
+            {
+                throw new InvalidDataException("Missing timeout");
+            }
+            ret.TimeoutSeconds = (timeout.Value.ToLower() == "infinite" 
+                || timeout.Value.ToLower() == "infinity")
+                ? -1
+                : Convert.ToInt64(timeout.Value.Substring("Second-".Length));
+
+            var depth = doc.Root.Descendants("{DAV:}depth").FirstOrDefault();
+            if (depth == null)
+            {
+                throw new InvalidDataException("Missing depth");
+            }
+            ret.Depth = depth.Value.ToLower() == "infinity" ? -1 : Convert.ToInt32(depth.Value.ToLower());
+
+            var lockRoot = doc.Root.Descendants("{DAV:}lockroot").FirstOrDefault();
+            if (lockRoot == null)
+            {
+                throw new InvalidDataException("Missing lock root");
+            }
+            ret.LockRoot = lockRoot.Descendants("{DAV:}href").First().Value;
+
+            return ret;
+        }
+        #endregion
     }
 }

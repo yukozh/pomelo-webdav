@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Routing;
+using Pomelo.Storage.WebDAV.Lock;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -136,6 +138,61 @@ namespace Pomelo.Storage.WebDAV
                 </D:propertyupdate> 
                 """;
             message.Content = new StringContent(request, Encoding.UTF8, "application/xml");
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
+        #region LOCK
+        public async Task<HttpResponseMessage> LockAsync(
+            string uri,
+            LockType type,
+            long timeoutSeconds = 3600,
+            int depth = 0,
+            string owner = null,
+            string refreshToken = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (owner == null)
+            {
+                if (!string.IsNullOrEmpty(Environment.UserDomainName))
+                {
+                    owner = Environment.UserDomainName + "/" + Environment.UserName;
+                }
+                else
+                {
+                    owner = Environment.MachineName + "/" + Environment.UserName;
+                }
+            }
+
+            using var message = new HttpRequestMessage(new HttpMethod("LOCK"), uri);
+            message.Headers.Add("Depth", depth == -1 ? "infinity" : depth.ToString());
+            message.Headers.Add("Timeout", timeoutSeconds == -1 ? "Infinite" : "Second-" + timeoutSeconds.ToString());
+            if (refreshToken != null)
+            {
+                message.Headers.Add("If", $"(<{refreshToken}>)");
+            }
+            var request = $"""
+                <D:lockinfo xmlns:D='DAV:'> 
+                    <D:lockscope><D:{type.ToString().ToLower()}/></D:lockscope> 
+                    <D:locktype><D:write/></D:locktype> 
+                    <D:owner> 
+                        <D:href>{SecurityElement.Escape(owner)}</D:href> 
+                    </D:owner> 
+                </D:lockinfo> 
+                """;
+            message.Content = new StringContent(request, Encoding.UTF8, "application/xml");
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
+        #region UNLOCK
+        public async Task<HttpResponseMessage> UnlockAsync(
+            string uri,
+            string refreshToken,
+            CancellationToken cancellationToken = default)
+        {
+            using var message = new HttpRequestMessage(new HttpMethod("UNLOCK"), uri);
+            message.Headers.Add("Lock-Token", $"<{refreshToken}>");
             return await SendAsync(message, cancellationToken);
         }
         #endregion

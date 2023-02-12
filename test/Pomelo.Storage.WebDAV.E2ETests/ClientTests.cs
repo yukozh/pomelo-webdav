@@ -130,5 +130,27 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             Assert.True(response.IsSuccessStatusCode);
             Assert.NotEmpty(result);
         }
+
+        [Fact]
+        public async Task LockAndUnlockTest()
+        {
+            // Arrange
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
+            var testPath = Path.Combine(StoragePath, "client_tests");
+            if (!Directory.Exists(testPath))
+            {
+                Directory.CreateDirectory(testPath);
+            }
+            File.WriteAllText(Path.Combine(testPath, "4.txt"), "Hello World");
+
+            // Act
+            using var response = await client.LockAsync("/client_tests/4.txt", Lock.LockType.Exclusive);
+            var lockResult = await response.ToLockResultAsync();
+            using var response2 = await client.UnlockAsync("/client_tests/4.txt", lockResult.LockToken);
+
+            // Assert
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.True(response2.IsSuccessStatusCode);
+        }
     }
 }
