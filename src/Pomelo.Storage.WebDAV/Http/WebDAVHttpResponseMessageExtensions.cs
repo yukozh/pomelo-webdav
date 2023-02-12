@@ -101,5 +101,25 @@ namespace Pomelo.Storage.WebDAV.Http
             };
         }
         #endregion
+
+        #region PROPPATCH
+        public static async Task<IEnumerable<PatchPropertyResponse>> ToPropPatchResultsAsync(
+            this HttpResponseMessage response)
+        { 
+            if (!AcceptedContentTypes.Contains(response.Content.Headers.ContentType.MediaType.ToLower()))
+            {
+                throw new InvalidDataException("Response body is not XML");
+            }
+
+            var doc = XDocument.Parse(await response.Content.ReadAsStringAsync());
+            return doc.Root.Descendants("{DAV:}propstat").Select(x => new PatchPropertyResponse 
+            {
+                Status = x.Descendants("{DAV:}status").Any()
+                    ? new ResponseStatus(x.Descendants("{DAV:}status").First().Value)
+                    : null,
+                Properties = x.Descendants("{DAV:}prop")
+            });
+        }
+        #endregion
     }
 }

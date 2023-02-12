@@ -6,4 +6,9 @@
 
         public string Namespace { get; set; }
     }
+
+    public class PropertyValue : Property
+    { 
+        public string Value { get; set; }
+    }
 }

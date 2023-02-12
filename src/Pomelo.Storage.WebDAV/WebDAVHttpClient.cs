@@ -6,19 +6,20 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Pomelo.Storage.WebDAV
 {
-    public class WebDAVClient : HttpClient
+    public class WebDAVHttpClient : HttpClient
     {
-        public WebDAVClient()
+        public WebDAVHttpClient()
         { }
 
-        public WebDAVClient(HttpMessageHandler httpMessageHandler)
+        public WebDAVHttpClient(HttpMessageHandler httpMessageHandler)
             : base(httpMessageHandler)
         { }
 
-        public WebDAVClient(
+        public WebDAVHttpClient(
             HttpMessageHandler httpMessageHandler, 
             bool disposeHandler)
             : base(httpMessageHandler, disposeHandler)
@@ -107,6 +108,34 @@ namespace Pomelo.Storage.WebDAV
             CancellationToken cancellationToken = default)
         {
             using var message = new HttpRequestMessage(new HttpMethod("HEAD"), uri);
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
+        #region PROPPATCH
+        public async Task<HttpResponseMessage> PropPatchAsync(
+            string uri,
+            IEnumerable<XElement> setPropertyValues = null,
+            IEnumerable<XElement> removeProperties = null,
+            CancellationToken cancellationToken = default)
+        {
+            using var message = new HttpRequestMessage(new HttpMethod("PROPPATCH"), uri);
+            var request = $"""
+                <?xml version="1.0" encoding="utf-8" ?> 
+                <D:propertyupdate xmlns:D="DAV:">
+                    <D:set> 
+                        <D:prop> 
+                            {string.Join("\r\n", setPropertyValues.Select(x => x.ToString()))}
+                        </D:prop> 
+                    </D:set> 
+                    <D:remove> 
+                        <D:prop>
+                            {string.Join("\r\n", removeProperties.Select(x => x.ToString()))}
+                        </D:prop> 
+                    </D:remove> 
+                </D:propertyupdate> 
+                """;
+            message.Content = new StringContent(request, Encoding.UTF8, "application/xml");
             return await SendAsync(message, cancellationToken);
         }
         #endregion

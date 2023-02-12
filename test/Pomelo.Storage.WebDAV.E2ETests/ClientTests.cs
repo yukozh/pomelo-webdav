@@ -9,7 +9,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         public async Task PropFindNotFoundTest()
         {
             // Arrange
-            using var client = new WebDAVClient() { BaseAddress = new Uri("http://localhost:7000") };
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
 
             // Act
             using var response = await client.PropFindAsync("/fake_path");
@@ -22,7 +22,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         public async Task PropFindRootTest()
         {
             // Arrange
-            using var client = new WebDAVClient() { BaseAddress = new Uri("http://localhost:7000") };
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
 
             // Act
             using var response = await client.PropFindAsync("/");
@@ -39,7 +39,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         public async Task PropFindFolderWithDepth1Test()
         {
             // Arrange
-            using var client = new WebDAVClient() { BaseAddress = new Uri("http://localhost:7000") };
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
             var testPath = Path.Combine(StoragePath, "client_tests");
             if (!Directory.Exists(testPath))
             {
@@ -64,7 +64,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         public async Task OptionsTest()
         {
             // Arrange
-            using var client = new WebDAVClient() { BaseAddress = new Uri("http://localhost:7000") };
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
 
             // Act
             using var response = await client.OptionsAsync("/");
@@ -83,7 +83,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         public async Task HeadTest()
         {
             // Arrange
-            using var client = new WebDAVClient() { BaseAddress = new Uri("http://localhost:7000") };
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
             var testPath = Path.Combine(StoragePath, "client_tests");
             if (!Directory.Exists(testPath))
             {
@@ -101,6 +101,34 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             Assert.True(DateTime.UtcNow - result.LastModified.Value < new TimeSpan(0, 0, 10));
             Assert.Equal("bytes", result.AcceptRanges);
             Assert.Equal("Hello World".Length, result.ContentLength);
+        }
+
+        [Fact]
+        public async Task PropPatchTest()
+        {
+            // Arrange
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
+            var testPath = Path.Combine(StoragePath, "client_tests");
+            if (!Directory.Exists(testPath))
+            {
+                Directory.CreateDirectory(testPath);
+            }
+            File.WriteAllText(Path.Combine(testPath, "3.txt"), "Hello World");
+
+            // Act
+            using var response = await client.PropPatchAsync("/client_tests/3.txt", new List<XElement>
+            {
+                XElement.Parse(@"<D:prop xmlns:D=""DAV:"" xmlns:Z=""http://ns.example.com/standards/z39.50/""> 
+    <Z:Authors> 
+        <Z:Author>Yuko Zheng</Z:Author> 
+    </Z:Authors> 
+</D:prop> ")   
+            }, new List<XElement>());
+            var result = await response.ToPropPatchResultsAsync();
+
+            // Assert
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.NotEmpty(result);
         }
     }
 }
