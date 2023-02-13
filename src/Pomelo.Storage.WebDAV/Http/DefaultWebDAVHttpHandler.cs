@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Pomelo.Storage.WebDAV.Lock;
 using Pomelo.Storage.WebDAV.Models;
 using Pomelo.Storage.WebDAV.Utils;
@@ -111,26 +112,49 @@ namespace Pomelo.Storage.WebDAV.Http
                 return;
             }
 
-            XDocument doc = await ReadRequestBodyAsXDocumentAsync();
-            var element = doc.Descendants("{DAV:}owner").Descendants("{DAV:}href").First();
-            var owner = element.Value;
+            Models.Lock _lock;
 
-            var exclusive = doc.Descendants("{DAV:}exclusive");
-            var lockType = exclusive == null
-                ? LockType.Shared
-                : LockType.Exclusive;
-
-            try
+            if (HttpContext.Request.Headers.ContainsKey("If")) // Refresh Lock
             {
-                var _lock = await LockManager.LockAsync(
-                    EncodedRelativeUri,
-                    Depth,
-                    lockType,
-                    owner,
-                    Timeout,
-                    RequestAborted);
+                var match = UrnRegex.Match(HttpContext.Request.Headers["If"]);
+                if (match == null)
+                {
+                    await RespondWihtoutBodyAsync(400);
+                    return;
+                }
 
-                var response = $"""
+                var lockToken = Guid.Parse(match.Value);
+                _lock = await LockManager.RefreshLock(lockToken, Timeout);
+            }
+            else
+            {
+                XDocument doc = await ReadRequestBodyAsXDocumentAsync();
+                var element = doc.Descendants("{DAV:}owner").Descendants("{DAV:}href").First();
+                var owner = element.Value;
+
+                var exclusive = doc.Descendants("{DAV:}exclusive");
+                var lockType = exclusive == null
+                    ? LockType.Shared
+                    : LockType.Exclusive;
+
+                try
+                {
+                    _lock = await LockManager.LockAsync(
+                        EncodedRelativeUri,
+                        Depth,
+                        lockType,
+                        owner,
+                        Timeout,
+                        RequestAborted);
+                }
+                catch (LockException)
+                {
+                    await RespondWihtoutBodyAsync(409);
+                    return;
+                }
+            }
+
+            var response = $"""
                     <?xml version="1.0" encoding="utf-8"?> 
                     <D:prop xmlns:D="DAV:"> 
                         <D:lockdiscovery> 
@@ -152,12 +176,7 @@ namespace Pomelo.Storage.WebDAV.Http
                         </D:lockdiscovery> 
                     </D:prop>
                     """;
-                await RespondXmlAsync(200, response);
-            }
-            catch (LockException)
-            {
-                await RespondWihtoutBodyAsync(409);
-            }
+            await RespondXmlAsync(200, response);
         }
 
         public override async Task MkcolAsync()

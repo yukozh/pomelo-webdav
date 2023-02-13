@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Security;
+using System.Security.Policy;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -173,7 +174,9 @@ namespace Pomelo.Storage.WebDAV
             {
                 message.Headers.Add("If", $"(<{refreshToken}>)");
             }
-            var request = $"""
+            else
+            {
+                var request = $"""
                 <D:lockinfo xmlns:D='DAV:'> 
                     <D:lockscope><D:{type.ToString().ToLower()}/></D:lockscope> 
                     <D:locktype><D:write/></D:locktype> 
@@ -182,7 +185,8 @@ namespace Pomelo.Storage.WebDAV
                     </D:owner> 
                 </D:lockinfo> 
                 """;
-            message.Content = new StringContent(request, Encoding.UTF8, "application/xml");
+                message.Content = new StringContent(request, Encoding.UTF8, "application/xml");
+            }
             return await SendAsync(message, cancellationToken);
         }
         #endregion

@@ -18,7 +18,9 @@ namespace Pomelo.Storage.WebDAV.Lock
     {
         string Schema { get; }
 
-        Task<IEnumerable<Models.Lock>> GetLocksAsync(string encodedRelativeUri, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Models.Lock>> GetLocksAsync(
+            string encodedRelativeUri, 
+            CancellationToken cancellationToken = default);
 
         Task<Models.Lock> LockAsync(
             string encodedUri,
@@ -28,8 +30,17 @@ namespace Pomelo.Storage.WebDAV.Lock
             long timeoutSeconds = -1,
             CancellationToken cancellationToken = default);
 
-        Task UnlockAsync(Guid lockToken, CancellationToken cancellationToken = default);
+        Task<Models.Lock> RefreshLock(
+            Guid lockToken, 
+            long timeoutSeconds = -1, 
+            CancellationToken cancellationToken = default);
 
-        Task DeleteLockByUriAsync(string encodedRelativeUri, CancellationToken cancellationToken = default);
+        Task UnlockAsync(
+            Guid lockToken, 
+            CancellationToken cancellationToken = default);
+
+        Task DeleteLockByUriAsync(
+            string encodedRelativeUri,
+            CancellationToken cancellationToken = default);
     }
 }

@@ -162,6 +162,29 @@ namespace Pomelo.Storage.WebDAV.Lock
             }
         }
 
+        public async Task<Models.Lock> RefreshLock(
+            Guid lockToken,
+            long timeoutSeconds = -1,
+            CancellationToken cancellationToken = default)
+        {
+            await ClearTimeoutLocksAsync();
+
+            if (!Locks.ContainsKey(lockToken))
+            {
+                return null;
+            }
+
+            if (timeoutSeconds > maxLockDurationSeconds || timeoutSeconds == -1)
+            {
+                timeoutSeconds = maxLockDurationSeconds;
+            }
+
+            var _lock = Locks[lockToken];
+            _lock.Expire = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+            _lock.RequestedTimeoutSeconds = timeoutSeconds;
+            return _lock;
+        }
+
         public async Task UnlockAsync(Guid lockToken, CancellationToken cancellationToken = default)
         {
             await ClearTimeoutLocksAsync();
