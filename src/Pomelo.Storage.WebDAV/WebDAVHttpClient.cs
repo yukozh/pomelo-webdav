@@ -213,6 +213,18 @@ namespace Pomelo.Storage.WebDAV
         }
         #endregion
 
+        #region GET
+        public async Task<HttpResponseMessage> GetRangeAsync(
+            string uri,
+            System.Net.Http.Headers.RangeHeaderValue range,
+            CancellationToken cancellationToken = default)
+        {
+            using var message = new HttpRequestMessage(new HttpMethod("GET"), uri);
+            message.Headers.Range = range;
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
         #region Misc
         protected virtual string BuildPropertiesWithNamespace(
             IEnumerable<(string shortedNamespace, string name)> properties)

@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Pomelo.Storage.WebDAV.Lock;
 using Pomelo.Storage.WebDAV.Models;
 using Pomelo.Storage.WebDAV.Utils;
@@ -20,7 +19,9 @@ namespace Pomelo.Storage.WebDAV.Http
             HttpContext httpContext, 
             long defaultRequestMaxSize = 31457280) 
             : base(httpContext, defaultRequestMaxSize)
-        { }
+        {
+            httpContext.Response.Headers.Add("Accept-Range", "bytes");
+        }
 
         public override async Task CopyAsync()
         {
@@ -75,9 +76,33 @@ namespace Pomelo.Storage.WebDAV.Http
             }
 
             using var fs = await Storage.GetFileReadStreamAsync(DecodedRelativeUri, RequestAborted);
-            HttpContext.Response.StatusCode = 200;
+            if (HttpContext.Request.Headers.ContainsKey("Range") 
+                && HttpContext.Request.Headers["Range"].ToString().StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
+            {
+                var range = HttpContext.Request.Headers["Range"].ToString().Substring("bytes=".Length);
+                var splited = range.Split('-');
+                var from = Convert.ToInt64(string.IsNullOrEmpty(splited[0]) ? "0" : splited[0]);
+                var to = Convert.ToInt64(string.IsNullOrEmpty(splited[1]) ? fs.Length.ToString() : splited[1]);
+                var length = to - from + 1;
+                HttpContext.Response.ContentLength = length;
+                fs.Position = from;
+                HttpContext.Response.Headers.Add("Content-Range", $"{from}-{to}/{fs.Length}");
+                HttpContext.Response.StatusCode = 206;
+            }
+            else
+            {
+                HttpContext.Response.StatusCode = 200;
+            }
             HttpContext.Response.ContentType = "application/octet-stream";
-            await fs.CopyToAsync(HttpContext.Response.Body, RequestAborted);
+            if (!HttpContext.Response.ContentLength.HasValue)
+            {
+                HttpContext.Response.ContentLength = fs.Length;
+            }
+            await fs.CopyToAsync(
+                HttpContext.Response.Body,
+                HttpContext.Response.ContentLength.Value, 
+                81920, 
+                RequestAborted);
             await HttpContext.Response.CompleteAsync();
         }
 
@@ -97,7 +122,6 @@ namespace Pomelo.Storage.WebDAV.Http
 
             await RespondOkAsync(new Dictionary<string, string> 
             {
-                ["Accept-Ranges"] = "bytes",
                 ["Etag"] = info.Properties.Etag,
                 ["Last-Modified"] = (info.Properties.LastModified ?? DateTime.UtcNow).ToString("r"),
                 ["Content-Length"] = info.Properties.ContentLength.ToString(),

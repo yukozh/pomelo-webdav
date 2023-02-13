@@ -128,7 +128,7 @@ namespace Pomelo.Storage.WebDAV
     {
         public static IEndpointConventionBuilder MapPomeloWebDAV(
             this IEndpointRouteBuilder endpoints,
-            Action<WebDAVMiddlewareOptions> configureOptions)
+            Action<WebDAVMiddlewareOptions> configureOptions = null)
         {
             var options = new WebDAVMiddlewareOptions();
             configureOptions?.Invoke(options);

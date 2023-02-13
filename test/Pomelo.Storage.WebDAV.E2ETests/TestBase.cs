@@ -42,7 +42,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             app.UseRouting();
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapPomeloWebDAV("/{*path}");
+                endpoints.MapPomeloWebDAV();
             });
 
             WebApplication = app;

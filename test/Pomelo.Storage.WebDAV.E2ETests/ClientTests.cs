@@ -200,5 +200,46 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             Assert.Equal(60, result1.TimeoutSeconds);
             Assert.Equal(120, result2.TimeoutSeconds);
         }
+
+        [Fact]
+        public async Task GetTest()
+        {
+            // Arrange
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
+            var testPath = Path.Combine(StoragePath, "client_tests");
+            if (!Directory.Exists(testPath))
+            {
+                Directory.CreateDirectory(testPath);
+            }
+            File.WriteAllText(Path.Combine(testPath, "6.txt"), "1234567890");
+
+            // Act
+            var response = await client.GetAsync("/client_tests/6.txt");
+            var content = await response.Content.ReadAsStringAsync();
+
+            // Assert
+            Assert.Equal("1234567890", content);
+        }
+
+        [Fact]
+        public async Task GetRangeTest()
+        {
+            // Arrange
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
+            var testPath = Path.Combine(StoragePath, "client_tests");
+            if (!Directory.Exists(testPath))
+            {
+                Directory.CreateDirectory(testPath);
+            }
+            File.WriteAllText(Path.Combine(testPath, "6.txt"), "1234567890");
+
+            // Act
+            var response = await client.GetRangeAsync("/client_tests/6.txt", new System.Net.Http.Headers.RangeHeaderValue(1, 2));
+            var content = await response.Content.ReadAsStringAsync();
+
+            // Assert
+            Assert.Equal("23", content);
+            Assert.Equal("1-2/10", response.Content.Headers.GetValues("Content-Range").First());
+        }
     }
 }
