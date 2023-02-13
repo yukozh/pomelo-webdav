@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System.Text;
 using System.Xml.Linq;
 using Pomelo.Storage.WebDAV.Http;
 
@@ -222,7 +223,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         }
 
         [Fact]
-        public async Task GetRangeTest()
+        public async Task GetAndPutRangeTest()
         {
             // Arrange
             using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
@@ -231,15 +232,20 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             {
                 Directory.CreateDirectory(testPath);
             }
-            File.WriteAllText(Path.Combine(testPath, "6.txt"), "1234567890");
+            File.WriteAllText(Path.Combine(testPath, "7.txt"), "1234567890");
 
             // Act
-            var response = await client.GetRangeAsync("/client_tests/6.txt", new System.Net.Http.Headers.RangeHeaderValue(1, 2));
+            var response = await client.GetRangeAsync("/client_tests/7.txt", new System.Net.Http.Headers.RangeHeaderValue(1, 2));
             var content = await response.Content.ReadAsStringAsync();
+            var response2 = await client.PutRangeAsync("/client_tests/7.txt", new MemoryStream(Encoding.UTF8.GetBytes("ab")), new System.Net.Http.Headers.RangeHeaderValue(1, 2));
+            var response3 = await client.GetRangeAsync("/client_tests/7.txt", new System.Net.Http.Headers.RangeHeaderValue(1, 2));
+            var content2 = await response3.Content.ReadAsStringAsync();
 
             // Assert
             Assert.Equal("23", content);
-            Assert.Equal("1-2/10", response.Content.Headers.GetValues("Content-Range").First());
+            Assert.Equal("bytes 1-2/10", response.Content.Headers.GetValues("Content-Range").First());
+            Assert.Equal("bytes 1-2/*", response2.Content.Headers.GetValues("Content-Range").First());
+            Assert.Equal("ab", content2);
         }
     }
 }

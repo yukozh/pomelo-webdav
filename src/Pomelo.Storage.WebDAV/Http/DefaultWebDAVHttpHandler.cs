@@ -86,7 +86,7 @@ namespace Pomelo.Storage.WebDAV.Http
                 var length = to - from + 1;
                 HttpContext.Response.ContentLength = length;
                 fs.Position = from;
-                HttpContext.Response.Headers.Add("Content-Range", $"{from}-{to}/{fs.Length}");
+                HttpContext.Response.Headers.Add("Content-Range", $"bytes {from}-{to}/{fs.Length}");
                 HttpContext.Response.StatusCode = 206;
             }
             else
@@ -349,9 +349,26 @@ namespace Pomelo.Storage.WebDAV.Http
             }
 
             using var fs = await Storage.GetFileWriteStreamAsync(DecodedRelativeUri, RequestAborted);
-            await HttpContext.Request.Body.CopyToAsync(fs, RequestAborted);
+            var statusCode = 204;
+            if (HttpContext.Request.Headers.ContainsKey("Range")
+                && HttpContext.Request.Headers["Range"].ToString().StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
+            {
+                var range = HttpContext.Request.Headers["Range"].ToString().Substring("bytes=".Length);
+                var splited = range.Split('-');
+                var from = Convert.ToInt64(string.IsNullOrEmpty(splited[0]) ? "0" : splited[0]);
+                var to = Convert.ToInt64(string.IsNullOrEmpty(splited[1]) ? fs.Length.ToString() : splited[1]);
+                var length = to - from + 1;
+                fs.Position = from;
+                HttpContext.Response.Headers.Add("Content-Range", $"bytes {from}-{to}/*");
+                statusCode = 206;
+                await HttpContext.Request.Body.CopyToAsync(fs, length, 81920, RequestAborted);
+            }
+            else
+            {
+                await HttpContext.Request.Body.CopyToAsync(fs, RequestAborted);
+            }
 
-            await RespondWihtoutBodyAsync(204);
+            await RespondWihtoutBodyAsync(statusCode);
         }
 
         public override async Task UnlockAsync()

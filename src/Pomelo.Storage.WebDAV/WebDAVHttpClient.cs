@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Pomelo.Storage.WebDAV.Lock;
 
 namespace Pomelo.Storage.WebDAV
@@ -221,6 +223,20 @@ namespace Pomelo.Storage.WebDAV
         {
             using var message = new HttpRequestMessage(new HttpMethod("GET"), uri);
             message.Headers.Range = range;
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
+        #region PUT
+        public async Task<HttpResponseMessage> PutRangeAsync(
+            string uri,
+            Stream stream,
+            System.Net.Http.Headers.RangeHeaderValue range,
+            CancellationToken cancellationToken = default)
+        {
+            using var message = new HttpRequestMessage(new HttpMethod("PUT"), uri);
+            message.Headers.Range = range;
+            message.Content = new StreamContent(stream);
             return await SendAsync(message, cancellationToken);
         }
         #endregion
