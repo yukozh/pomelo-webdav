@@ -238,14 +238,15 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             var response = await client.GetRangeAsync("/client_tests/7.txt", new System.Net.Http.Headers.RangeHeaderValue(1, 2));
             var content = await response.Content.ReadAsStringAsync();
             var response2 = await client.PutRangeAsync("/client_tests/7.txt", new MemoryStream(Encoding.UTF8.GetBytes("ab")), new System.Net.Http.Headers.RangeHeaderValue(1, 2));
-            var response3 = await client.GetRangeAsync("/client_tests/7.txt", new System.Net.Http.Headers.RangeHeaderValue(1, 2));
+            var response3 = await client.GetRangeAsync("/client_tests/7.txt", new System.Net.Http.Headers.RangeHeaderValue(0, 3));
             var content2 = await response3.Content.ReadAsStringAsync();
 
             // Assert
             Assert.Equal("23", content);
             Assert.Equal("bytes 1-2/10", response.Content.Headers.GetValues("Content-Range").First());
             Assert.Equal("bytes 1-2/*", response2.Content.Headers.GetValues("Content-Range").First());
-            Assert.Equal("ab", content2);
+            Assert.Equal("bytes 0-3/10", response3.Content.Headers.GetValues("Content-Range").First());
+            Assert.Equal("1ab4", content2);
         }
     }
 }
