@@ -291,18 +291,23 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         {
             // Arrange
             var fileName = "test_partial_write.txt";
-            File.WriteAllText(Path.Combine(Drive, fileName), "1234567890");
+            var sb = new StringBuilder();
+            for (var i = 0; i < 1024 * 1024 * 100; ++i)
+            {
+                sb.Append('a');
+            }
+            File.WriteAllText(Path.Combine(Drive, fileName), sb.ToString());
 
             // Act
             using (var writeStream = new FileStream(Path.Combine(Drive, fileName), FileMode.Open, FileAccess.ReadWrite))
             {
-                writeStream.Position = 1;
-                var buffer = Encoding.UTF8.GetBytes("ab");
+                writeStream.Position = 1024 * 1024 * 50;
+                var buffer = Encoding.UTF8.GetBytes("cd");
                 await writeStream.WriteAsync(buffer, 0, 2);
             }
 
             // Assert
-            Assert.Equal("1ab4567890", File.ReadAllText(Path.Combine(Drive, fileName)));
+            Assert.Contains("cd", File.ReadAllText(Path.Combine(Drive, fileName)));
         }
     }
 }

@@ -73,6 +73,7 @@ namespace Pomelo.Storage.WebDAV
                     return;
                 case "PUT":
                 case "POST":
+                case "PATCH":
                     if (await handler.IsAbleToWriteAsync())
                     {
                         await handler.PutAsync();
