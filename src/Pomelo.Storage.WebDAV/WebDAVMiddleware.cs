@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -11,6 +11,7 @@ using Pomelo.Storage.WebDAV.Factory;
 using Pomelo.Storage.WebDAV.Http;
 using Pomelo.Storage.WebDAV.Lock;
 using Pomelo.Storage.WebDAV.Middleware;
+using Pomelo.Storage.WebDAV.Options;
 
 namespace Pomelo.Storage.WebDAV
 {
@@ -19,10 +20,12 @@ namespace Pomelo.Storage.WebDAV
     public partial class WebDAVMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly WebDAVMiddlewareOptions _options;
 
-        public WebDAVMiddleware(RequestDelegate next, IEnumerable<IWebDAVMiddleware> middlewares)
+        public WebDAVMiddleware(RequestDelegate next, WebDAVMiddlewareOptions options)
         {
             _next = next;
+            _options = options;
         }
 
         public async Task Invoke(HttpContext httpContext)
@@ -62,7 +65,8 @@ namespace Pomelo.Storage.WebDAV
                     await handler.HeadAsync();
                     break;
                 case "GET":
-                    if (await handler.IsAbleToReadAsync())
+                    if (await handler.IsAbleToReadAsync() 
+                        || _options.AllowReadExclusiveLockedResources)
                     {
                         await handler.GetAsync();
                     }
@@ -124,13 +128,16 @@ namespace Pomelo.Storage.WebDAV
     {
         public static IEndpointConventionBuilder MapPomeloWebDAV(
             this IEndpointRouteBuilder endpoints,
-            string pattern = "/{*path}")
+            Action<WebDAVMiddlewareOptions> configureOptions)
         {
+            var options = new WebDAVMiddlewareOptions();
+            configureOptions?.Invoke(options);
+
             var pipeline = endpoints.CreateApplicationBuilder()
-                .UseMiddleware<WebDAVMiddleware>()
+                .UseMiddleware<WebDAVMiddleware>(options)
                 .Build();
 
-            return endpoints.Map(pattern, pipeline).WithDisplayName("WebDAV");
+            return endpoints.Map(options.Pattern, pipeline).WithDisplayName("WebDAV");
         }
     }
 }
