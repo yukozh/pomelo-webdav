@@ -1,6 +1,8 @@
 // Copyright (c) Yuko(Yisheng) Zheng. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System.Text;
+
 namespace Pomelo.Storage.WebDAV.E2ETests
 {
     public class MountTests : TestBase
@@ -261,6 +263,46 @@ namespace Pomelo.Storage.WebDAV.E2ETests
 
             // Assert
             Assert.False(Directory.Exists(Path.Combine(Drive, destDirectoryName)));
+        }
+
+        [Fact]
+        public async Task PartialReadTests()
+        {
+            // Arrange
+            var fileName = "test_partial_read.txt";
+            File.WriteAllText(Path.Combine(StoragePath, fileName), "1234567890");
+
+            // Act
+            var buffer = new byte[32];
+            string readResult = null;
+            using (var readStream = new FileStream(Path.Combine(Drive, fileName), FileMode.Open, FileAccess.Read))
+            {
+                readStream.Position = 3;
+                await readStream.ReadAsync(buffer, 0, 2);
+                readResult = Encoding.UTF8.GetString(buffer.AsSpan(0, 2));
+            }
+
+            // Assert
+            Assert.Equal("45", readResult);
+        }
+
+        [Fact]
+        public async Task PartialWriteTests()
+        {
+            // Arrange
+            var fileName = "test_partial_write.txt";
+            File.WriteAllText(Path.Combine(Drive, fileName), "1234567890");
+
+            // Act
+            using (var writeStream = new FileStream(Path.Combine(Drive, fileName), FileMode.Open, FileAccess.ReadWrite))
+            {
+                writeStream.Position = 1;
+                var buffer = Encoding.UTF8.GetBytes("ab");
+                await writeStream.WriteAsync(buffer, 0, 2);
+            }
+
+            // Assert
+            Assert.Equal("1ab4567890", File.ReadAllText(Path.Combine(Drive, fileName)));
         }
     }
 }

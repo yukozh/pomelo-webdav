@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,6 @@ namespace Pomelo.Storage.WebDAV.Http
             long defaultRequestMaxSize = 31457280) 
             : base(httpContext, defaultRequestMaxSize)
         {
-            httpContext.Response.Headers.Add("Accept-Range", "bytes");
         }
 
         public override async Task CopyAsync()
@@ -75,6 +75,8 @@ namespace Pomelo.Storage.WebDAV.Http
                 return;
             }
 
+            HttpContext.Response.Headers.Add("Accept-Ranges", "bytes");
+
             using var fs = await Storage.GetFileReadStreamAsync(DecodedRelativeUri, RequestAborted);
             if (HttpContext.Request.Headers.ContainsKey("Range") 
                 && HttpContext.Request.Headers["Range"].ToString().StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
@@ -119,6 +121,8 @@ namespace Pomelo.Storage.WebDAV.Http
                 await RespondNotFoundAsync();
                 return;
             }
+
+            HttpContext.Response.Headers.Add("Accept-Ranges", "bytes");
 
             await RespondOkAsync(new Dictionary<string, string> 
             {
@@ -347,6 +351,8 @@ namespace Pomelo.Storage.WebDAV.Http
                 await RespondWihtoutBodyAsync(409);
                 return;
             }
+
+            HttpContext.Response.Headers.Add("Accept-Ranges", "bytes");
 
             using var fs = await Storage.GetFileWriteStreamAsync(DecodedRelativeUri, RequestAborted);
             var statusCode = 204;
