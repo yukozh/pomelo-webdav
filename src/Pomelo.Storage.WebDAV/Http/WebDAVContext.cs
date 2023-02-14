@@ -271,7 +271,7 @@ namespace Pomelo.Storage.WebDAV.Http
 
             ConsumeHeaders(headers);
             HttpContext.Response.StatusCode = statusCode;
-            HttpContext.Response.ContentLength = xml.Length;
+            HttpContext.Response.ContentLength = Encoding.UTF8.GetByteCount(xml);
             HttpContext.Response.ContentType = "text/xml; charset=utf-8";
             await HttpContext.Response.WriteAsync(xml);
             await HttpContext.Response.CompleteAsync();
