@@ -354,11 +354,11 @@ namespace Pomelo.Storage.WebDAV.Http
 
             HttpContext.Response.Headers.Add("Accept-Ranges", "bytes");
 
-            using var fs = await Storage.GetFileWriteStreamAsync(DecodedRelativeUri, null, RequestAborted);
             var statusCode = 204;
             if (HttpContext.Request.Headers.ContainsKey("Range")
                 && HttpContext.Request.Headers["Range"].ToString().StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))
             {
+                using var fs = await Storage.GetFileWriteStreamAsync(DecodedRelativeUri, null, RequestAborted);
                 var range = HttpContext.Request.Headers["Range"].ToString().Substring("bytes=".Length);
                 var splited = range.Split('-');
                 var from = Convert.ToInt64(string.IsNullOrEmpty(splited[0]) ? "0" : splited[0]);
@@ -371,6 +371,7 @@ namespace Pomelo.Storage.WebDAV.Http
             }
             else
             {
+                using var fs = await Storage.GetFileWriteStreamAsync(DecodedRelativeUri, HttpContext.Request.ContentLength, RequestAborted);
                 await HttpContext.Request.Body.CopyToAsync(fs, RequestAborted);
             }
 
