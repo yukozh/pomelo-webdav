@@ -41,9 +41,10 @@ namespace Pomelo.Storage.WebDAV.Sample
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapGet("/", () => "Pomelo WebDAV server is running!");
+            app.UseHttpOptionsMethodMiddleware();
             app.UseEndpoints(endpoints => 
             {
-                endpoints.MapPomeloWebDAV();
+                endpoints.MapPomeloWebDAV(x => x.Pattern = "/api/webdav/{*path}");
             });
             app.Run();
         }
