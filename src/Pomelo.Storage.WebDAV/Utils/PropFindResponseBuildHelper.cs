@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,7 +49,7 @@ namespace Pomelo.Storage.WebDAV.Utils
                             <D:resourcetype>
                                 <D:collection/>
                             </D:resourcetype>
-                            <D:displayname/>
+                            { (item.DisplayName != null ? $"<D:displayname>{SecurityElement.Escape(item.DisplayName)}</D:displayname>" : "<D:displayname/>") }
                             {await BuildLocksAsync(HttpUtility.UrlPathEncode(item.Href), lockManager, cancellationToken)}
                         </D:prop>
                     </D:propstat>
@@ -113,7 +114,7 @@ namespace Pomelo.Storage.WebDAV.Utils
                                 <D:getcontenttype/>
                                 <D:getlastmodified>{(item.Properties.LastModified ?? DateTime.UtcNow).ToString("r")}</D:getlastmodified>
                                 <D:creationdate>{ParseCreationTime(item.Properties.CreationTime)}</D:creationdate>
-                                <D:displayname/>
+                                {(item.DisplayName != null ? $"<D:displayname>{SecurityElement.Escape(item.DisplayName)}</D:displayname>" : "<D:displayname/>")}
                                 {await BuildLocksAsync(HttpUtility.UrlPathEncode(item.Href), lockManager, cancellationToken)}
                             </D:prop>
                         </D:propstat>

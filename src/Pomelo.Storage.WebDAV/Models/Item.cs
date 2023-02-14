@@ -9,6 +9,8 @@ namespace Pomelo.Storage.WebDAV.Models
     {
         public string Href { get; set; }
 
+        public string DisplayName { get; set; }
+
         public ItemProperties Properties { get; set; }
 
         public int Depth { get; set; }
