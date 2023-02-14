@@ -354,7 +354,7 @@ namespace Pomelo.Storage.WebDAV.Http
 
             HttpContext.Response.Headers.Add("Accept-Ranges", "bytes");
 
-            using var fs = await Storage.GetFileWriteStreamAsync(DecodedRelativeUri, RequestAborted);
+            using var fs = await Storage.GetFileWriteStreamAsync(DecodedRelativeUri, null, RequestAborted);
             var statusCode = 204;
             if (HttpContext.Request.Headers.ContainsKey("Range")
                 && HttpContext.Request.Headers["Range"].ToString().StartsWith("bytes=", StringComparison.OrdinalIgnoreCase))

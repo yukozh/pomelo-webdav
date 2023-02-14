@@ -106,7 +106,8 @@ namespace Pomelo.Storage.WebDAV.Storage
 
         public Task<Stream> GetFileWriteStreamAsync(
             string path,
-            CancellationToken cancellationToken)
+            long? requestedrequestedBytes = null,
+            CancellationToken cancellationToken = default)
         {
             var physicalPath = Path.Combine(this.localPath, path);
             return Task.FromResult(new FileStream(physicalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite) as Stream);

@@ -26,6 +26,7 @@ namespace Pomelo.Storage.WebDAV.Storage
 
         Task<Stream> GetFileWriteStreamAsync(
             string decodedRelativeUri,
+            long? requestedBytes = null,
             CancellationToken cancellationToken = default);
 
         Task<bool> IsFileExistsAsync(
