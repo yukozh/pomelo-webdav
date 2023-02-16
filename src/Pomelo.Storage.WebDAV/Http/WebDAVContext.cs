@@ -171,6 +171,11 @@ namespace Pomelo.Storage.WebDAV.Http
         {
             get 
             {
+                if (HttpContext.Request.Headers.ContainsKey("X-Forwarded-WebDAV-BaseUrl"))
+                {
+                    return HttpContext.Request.Headers["X-Forwarded-WebDAV-BaseUrl"].ToString().TrimEnd('/');
+                }
+
                 var baseUrlBuilder = new StringBuilder();
                 baseUrlBuilder.Append(HttpContext.Request.Scheme);
                 baseUrlBuilder.Append("://");
@@ -187,7 +192,7 @@ namespace Pomelo.Storage.WebDAV.Http
                     baseUrlBuilder.Append(HttpContext.Request.Path.Value.TrimEnd('/'));
                 }
                 var baseUrl = baseUrlBuilder.ToString();
-                return HttpUtility.UrlPathEncode(baseUrl.Trim('/'));
+                return HttpUtility.UrlPathEncode(baseUrl.TrimEnd('/'));
             }
         }
 

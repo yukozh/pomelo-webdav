@@ -77,7 +77,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "net",
-                    Arguments = "use P: /delete",
+                    Arguments = "use Q: /delete",
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
