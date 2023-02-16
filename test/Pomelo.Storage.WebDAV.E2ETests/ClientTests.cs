@@ -203,23 +203,23 @@ namespace Pomelo.Storage.WebDAV.E2ETests
         }
 
         [Fact]
-        public async Task GetTest()
+        public async Task PropFindWithForwardTest()
         {
             // Arrange
             using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
-            var testPath = Path.Combine(StoragePath, "client_tests");
+            client.DefaultRequestHeaders.Add("X-Forwarded-WebDAV-BaseUrl", "http://somehost/api/webdav");
+            var testPath = Path.Combine(StoragePath, "forward_test");
             if (!Directory.Exists(testPath))
             {
                 Directory.CreateDirectory(testPath);
             }
-            File.WriteAllText(Path.Combine(testPath, "6.txt"), "1234567890");
 
             // Act
-            var response = await client.GetAsync("/client_tests/6.txt");
-            var content = await response.Content.ReadAsStringAsync();
+            using var response = await client.PropFindAsync("/", 1);
+            var result = await response.ToPropFindResultsAsync();
 
             // Assert
-            Assert.Equal("1234567890", content);
+            Assert.Contains(result, x => x.Href == "http://somehost/api/webdav/forward_test");
         }
 
         [Fact]
@@ -247,6 +247,26 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             Assert.Equal("bytes 1-2/*", response2.Content.Headers.GetValues("Content-Range").First());
             Assert.Equal("bytes 0-3/10", response3.Content.Headers.GetValues("Content-Range").First());
             Assert.Equal("1ab4", content2);
+        }
+
+        [Fact]
+        public async Task GetTest()
+        {
+            // Arrange
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
+            var testPath = Path.Combine(StoragePath, "client_tests");
+            if (!Directory.Exists(testPath))
+            {
+                Directory.CreateDirectory(testPath);
+            }
+            File.WriteAllText(Path.Combine(testPath, "6.txt"), "1234567890");
+
+            // Act
+            var response = await client.GetAsync("/client_tests/6.txt");
+            var content = await response.Content.ReadAsStringAsync();
+
+            // Assert
+            Assert.Equal("1234567890", content);
         }
     }
 }
