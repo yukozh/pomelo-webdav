@@ -127,12 +127,12 @@ namespace Pomelo.Storage.WebDAV.Http
 
         public virtual int Depth 
             => HttpContext.Request.Headers.ContainsKey("Depth")
-            ? Convert.ToInt32(HttpContext.Request.Headers["Depth"].ToString())
+            ? Convert.ToInt32(HttpContext.Request.Headers["Depth"].First())
             : 0;
 
         public virtual bool Overwrite
             => HttpContext.Request.Headers.ContainsKey("Overwrite")
-            ? HttpContext.Request.Headers["Overwrite"].ToString().ToUpper() == "T"
+            ? HttpContext.Request.Headers["Overwrite"].First().ToUpper() == "T"
             : false;
 
         public virtual long Timeout
@@ -140,7 +140,7 @@ namespace Pomelo.Storage.WebDAV.Http
             get 
             {
                 var timeoutString = HttpContext.Request.Headers.ContainsKey("Timeout")
-                    ? HttpContext.Request.Headers["Timeout"].ToString()
+                    ? HttpContext.Request.Headers["Timeout"].First()
                     : null;
 
                 if (!timeoutString.StartsWith("Second-", StringComparison.OrdinalIgnoreCase))
@@ -173,7 +173,7 @@ namespace Pomelo.Storage.WebDAV.Http
             {
                 if (HttpContext.Request.Headers.ContainsKey("X-Forwarded-WebDAV-BaseUrl"))
                 {
-                    return HttpContext.Request.Headers["X-Forwarded-WebDAV-BaseUrl"].ToString().TrimEnd('/');
+                    return HttpContext.Request.Headers["X-Forwarded-WebDAV-BaseUrl"].First().TrimEnd('/');
                 }
 
                 var baseUrlBuilder = new StringBuilder();
@@ -204,7 +204,7 @@ namespace Pomelo.Storage.WebDAV.Http
         {
             get
             {
-                return HttpContext.Request.Headers["Destination"].ToString();
+                return HttpContext.Request.Headers["Destination"].First();
             }
         }
 
@@ -220,7 +220,7 @@ namespace Pomelo.Storage.WebDAV.Http
         {
             get
             {
-                return ConvertFullEncodedUriToRelativeEncodedUri(EncodedBaseUri, HttpContext.Request.Headers["Destination"].ToString().Trim('/'));
+                return ConvertFullEncodedUriToRelativeEncodedUri(EncodedBaseUri, HttpContext.Request.Headers["Destination"].First().Trim('/'));
             }
         }
 
@@ -228,7 +228,7 @@ namespace Pomelo.Storage.WebDAV.Http
         {
             get
             {
-                return ConvertFullEncodedUriToRelativeDecodedUri(EncodedBaseUri, HttpContext.Request.Headers["Destination"].ToString().Trim('/'));
+                return ConvertFullEncodedUriToRelativeDecodedUri(EncodedBaseUri, HttpContext.Request.Headers["Destination"].First().Trim('/'));
             }
         }
 
