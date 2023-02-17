@@ -143,6 +143,11 @@ namespace Pomelo.Storage.WebDAV.Http
                     ? HttpContext.Request.Headers["Timeout"].First()
                     : null;
 
+                if (timeoutString.Contains(','))
+                {
+                    timeoutString = timeoutString.Split(',')[0].Trim();
+                }
+
                 if (!timeoutString.StartsWith("Second-", StringComparison.OrdinalIgnoreCase))
                 {
                     throw new NotSupportedException("Timeout only supports second");
