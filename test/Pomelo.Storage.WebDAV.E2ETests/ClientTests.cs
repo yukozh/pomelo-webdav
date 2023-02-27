@@ -267,6 +267,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
 
             // Assert
             Assert.Equal("1234567890", content);
+            Assert.Equal("application/octet-stream", response.Content.Headers.ContentType.MediaType);
         }
     }
 }

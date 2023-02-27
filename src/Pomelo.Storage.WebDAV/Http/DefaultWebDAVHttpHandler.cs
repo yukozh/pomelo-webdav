@@ -4,10 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.DependencyInjection;
 using Pomelo.Storage.WebDAV.Lock;
 using Pomelo.Storage.WebDAV.Models;
 using Pomelo.Storage.WebDAV.Utils;
@@ -95,7 +96,16 @@ namespace Pomelo.Storage.WebDAV.Http
             {
                 HttpContext.Response.StatusCode = 200;
             }
-            HttpContext.Response.ContentType = "application/octet-stream";
+            var contentTypeProvider = HttpContext.RequestServices.GetService<IContentTypeProvider>();
+            if (contentTypeProvider == null 
+                || !contentTypeProvider.TryGetContentType(DecodedRelativeUri, out var contentType))
+            {
+                HttpContext.Response.ContentType = "application/octet-stream";
+            }
+            else
+            {
+                HttpContext.Response.ContentType = contentType;
+            }
             if (!HttpContext.Response.ContentLength.HasValue)
             {
                 HttpContext.Response.ContentLength = fs.Length;
@@ -124,12 +134,21 @@ namespace Pomelo.Storage.WebDAV.Http
 
             HttpContext.Response.Headers.Add("Accept-Ranges", "bytes");
 
+
+            var contentTypeProvider = HttpContext.RequestServices.GetService<IContentTypeProvider>();
+            string contentType;
+            if (contentTypeProvider == null
+                || !contentTypeProvider.TryGetContentType(DecodedRelativeUri, out contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+
             await RespondOkAsync(new Dictionary<string, string> 
             {
                 ["Etag"] = info.Properties.Etag,
                 ["Last-Modified"] = (info.Properties.LastModified ?? DateTime.UtcNow).ToString("r"),
                 ["Content-Length"] = info.Properties.ContentLength.ToString(),
-                ["Content-Type"] = "application/octet-stream"
+                ["Content-Type"] = contentType
             });
         }
 

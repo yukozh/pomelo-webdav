@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Pomelo.Storage.WebDAV.ContentType;
 using Pomelo.Storage.WebDAV.Factory;
 using Pomelo.Storage.WebDAV.Lock;
 using Pomelo.Storage.WebDAV.Storage;
@@ -19,7 +20,7 @@ namespace Pomelo.Storage.WebDAV.E2ETests
 
         protected WebApplication WebApplication { get; init; }
 
-        public TestBase() 
+        public TestBase(bool useContentTypeProvider = false) 
         {
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseKestrel(x =>
@@ -36,6 +37,12 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             builder.Services.AddDefaultWebDAVHttpHandlerFactory()
                 .AddLocalDiskWebDAVStorageProvider(StoragePath)
                 .AddSimpleWebDavLockManager();
+
+            if (useContentTypeProvider)
+            {
+                builder.Services.AddFileExtensionContentTypeProvider();
+            }
+
             var app = builder.Build();
 
             app.MapGet("/", () => "Pomelo WebDAV server is running!");
