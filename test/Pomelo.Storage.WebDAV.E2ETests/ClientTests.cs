@@ -269,5 +269,25 @@ namespace Pomelo.Storage.WebDAV.E2ETests
             Assert.Equal("1234567890", content);
             Assert.Equal("application/octet-stream", response.Content.Headers.ContentType.MediaType);
         }
+
+        [Fact]
+        public async Task MoveTest()
+        {
+            // Arrange
+            using var client = new WebDAVHttpClient() { BaseAddress = new Uri("http://localhost:7000") };
+            var testPath = Path.Combine(StoragePath, "client_tests");
+            if (!Directory.Exists(testPath))
+            {
+                Directory.CreateDirectory(testPath);
+            }
+            File.WriteAllText(Path.Combine(testPath, "7.txt"), "111");
+
+            // Act
+            var response = await client.MoveAsync("/client_tests/7.txt", "http://localhost:7000/client_tests/8.txt", false);
+
+            // Assert
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.True(File.Exists(Path.Combine(testPath, "8.txt")));
+        }
     }
 }

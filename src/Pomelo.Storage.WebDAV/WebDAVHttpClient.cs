@@ -241,6 +241,20 @@ namespace Pomelo.Storage.WebDAV
         }
         #endregion
 
+        #region Move
+        public async Task<HttpResponseMessage> MoveAsync(
+            string uri,
+            string destination,
+            bool overwrite,
+            CancellationToken cancellationToken = default)
+        {
+            using var message = new HttpRequestMessage(new HttpMethod("MOVE"), uri);
+            message.Headers.Add("Destination", destination);
+            message.Headers.Add("Overwrite", overwrite ? "T" : "F");
+            return await SendAsync(message, cancellationToken);
+        }
+        #endregion
+
         #region Misc
         protected virtual string BuildPropertiesWithNamespace(
             IEnumerable<(string shortedNamespace, string name)> properties)
