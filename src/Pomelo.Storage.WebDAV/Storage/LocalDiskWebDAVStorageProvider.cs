@@ -101,7 +101,7 @@ namespace Pomelo.Storage.WebDAV.Storage
                 return Task.FromResult<Stream>(null);
             }
 
-            return Task.FromResult(new FileStream(physicalPath, FileMode.Open, FileAccess.Read) as Stream);
+            return Task.FromResult(new FileStream(physicalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete) as Stream);
         }
 
         public Task<Stream> GetFileWriteStreamAsync(
@@ -110,7 +110,7 @@ namespace Pomelo.Storage.WebDAV.Storage
             CancellationToken cancellationToken = default)
         {
             var physicalPath = Path.Combine(this.localPath, path);
-            return Task.FromResult(new FileStream(physicalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite) as Stream);
+            return Task.FromResult(new FileStream(physicalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete) as Stream);
         }
 
         public Task<bool> IsFileExistsAsync(string path, CancellationToken cancellationToken = default)
